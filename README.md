@@ -118,7 +118,7 @@ If you encounter issues while using `reveal-me`, verify your configuration and c
 
 ## Contributing
 
-Contributions to `reveal-me` are welcome! Please refer to the project's GitHub repository for guidelines on contributing and submitting pull requests.
+Contributions to `reveal-me` are welcome! Please refer to the project's GitHub [repository guidelines](CONTRIBUTING.md) on contributing and submitting pull requests.
 
 ## License
 
