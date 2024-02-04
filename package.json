@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "start": "node src/main.js src/examples --watch",
-    "lint": "eslint lib tests",
+    "lint": "eslint src tests",
     "format": "prettier --write src/**/*.js tests/*.js *.md",
     "test": "jest tests/*.spec.js",
     "release": "release-it"
