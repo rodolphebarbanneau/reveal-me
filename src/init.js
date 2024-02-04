@@ -85,7 +85,7 @@ export default async (pkg, config) => {
           test: 'echo "Error: no test specified" && exit 1',
         },
         dependencies: {
-          'reveal-me': `^${pkg.version}`,
+          puppeteer: '^21.9.0',
         },
       },
       null,
