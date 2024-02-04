@@ -9,5 +9,5 @@ COPY . /app
 EXPOSE 3000
 
 WORKDIR /
-ENTRYPOINT ["node", "/app/main.js"]
+ENTRYPOINT ["node", "/app/bin/main.js"]
 CMD [".", "src"]

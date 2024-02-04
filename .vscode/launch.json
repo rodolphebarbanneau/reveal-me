@@ -24,7 +24,9 @@
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/src/main.js",
-      "args": [],
+      "args": [
+        "--watch",
+      ],
       "console": "integratedTerminal",
       "skipFiles": [
           "<node_internals>/**"

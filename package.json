@@ -10,15 +10,16 @@
     "email": "rodolphe.barbanneau@gmail.com"
   },
   "bin": {
-    "reveal-me": "src/main.js"
+    "reveal-me": "bin/main.js"
   },
   "files": [
+    "bin",
     "src"
   ],
   "scripts": {
-    "start": "node src/main.js src/examples --watch",
-    "lint": "eslint src tests",
-    "format": "prettier --write src/**/*.js tests/*.js *.md",
+    "start": "node bin/main.js src/examples --watch",
+    "lint": "eslint bin src tests",
+    "format": "prettier --write bin/**/*.js src/**/*.js tests/**/*.js **/*.md",
     "test": "jest tests/*.spec.js",
     "release": "release-it"
   },

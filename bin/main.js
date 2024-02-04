@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -8,15 +10,15 @@ import open from 'open';
 import updater from 'update-notifier';
 import yargsParser from 'yargs-parser';
 
-import build from './build.js';
-import configuration, { CLI_OPTIONS } from './config.js';
-import init from './init.js';
-import print from './print.js';
-import startServer from './server.js';
-import { isDirectory, isFile, loadJSON, sanitize, searchFiles, toArray } from './utils.js';
+import build from '../src/build.js';
+import configuration, { CLI_OPTIONS } from '../src/config.js';
+import init from '../src/init.js';
+import print from '../src/print.js';
+import startServer from '../src/server.js';
+import { isDirectory, isFile, loadJSON, sanitize, searchFiles, toArray } from '../src/utils.js';
 
 /**
- * @typedef {import('./types').Config} Config
+ * @typedef {import('../src/types').Config} Config
  */
 
 // Retrieve package directory
