@@ -8,10 +8,11 @@ import open from 'open';
 import updater from 'update-notifier';
 import yargsParser from 'yargs-parser';
 
+import build from './build.js';
 import configuration, { CLI_OPTIONS } from './config.js';
+import init from './init.js';
 import print from './print.js';
 import startServer from './server.js';
-import build from './build.js';
 import { isDirectory, isFile, loadJSON, sanitize, searchFiles, toArray } from './utils.js';
 
 /**
@@ -30,6 +31,28 @@ const argv = yargsParser(process.argv.slice(2), CLI_OPTIONS);
 
 // Register the autocomplete prompt type
 inquirer.registerPrompt('autocomplete', autocompletePrompt);
+
+/**
+ * Prompts the user for a project initialization.
+ * @returns {Promise<object>} - The prompt answer.
+ */
+const promptForInit = async () => {
+  return inquirer.prompt([
+    { name: 'private', message: 'private:', default: true },
+    { name: 'name', message: 'package name:', default: path.basename(process.cwd()) },
+    { name: 'version', message: 'version:', default: '1.0.0' },
+    { name: 'license', message: 'license:' },
+    { name: 'description', message: 'description:' },
+    { name: 'keywords', message: 'keywords:' },
+    { name: 'author', message: 'author:' },
+    {
+      type: 'confirm',
+      name: 'confirm',
+      message: 'Proceed with initialization in current directory? (y/N)',
+      default: false,
+    },
+  ]);
+};
 
 /**
  * Prompts the user for action selection.
@@ -116,13 +139,22 @@ const promptForPresentation = async (config) => {
  * */
 if (import.meta.url === `file://${process.argv[1]}`) {
   (async () => {
-    if (argv.version) {
-      // Print version
-      console.log(pkg.version);
-    } else if (argv.help) {
+    if (argv.help) {
       // Print help
       const help = await fs.readFile(path.join(__dirname, './help.txt'));
       console.log(help.toString());
+    } else if (argv.version) {
+      // Print version
+      console.log(pkg.version);
+    } else if (argv.init) {
+      // Initialize a new project
+      const project = await promptForInit();
+      if (project.confirm) {
+        await init(pkg, project);
+      } else {
+        console.log('Operation aborted');
+      }
+      process.exit(0);
     } else {
       // Serve presentations
       const mode = [argv.build ? 'build' : '', argv.print ? 'print' : '']

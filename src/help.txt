@@ -8,6 +8,7 @@ Usage:
 
 Options:
 -v, --version                                 Output the version number.
+    --init                                    A boolean to initialize a new project.
     --extensions <exts>                       A coma separated list of file extensions to include.
 -c, --config <path>                           Path to the configuration file.
     --project <name>                          Name of the project.

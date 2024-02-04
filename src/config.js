@@ -29,14 +29,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const CLI_OPTIONS = {
   alias: {
     a: 'all',
+    b: 'build',
     c: 'config',
     h: 'help',
-    b: 'build',
+    i: 'init',
     p: 'print',
     v: 'version',
     w: 'watch',
   },
-  boolean: ['all', 'help', 'build', 'no-open', 'print', 'version', 'watch'],
+  boolean: ['all', 'help', 'build', 'init', 'no-open', 'print', 'version', 'watch'],
   string: ['config'],
 };
 

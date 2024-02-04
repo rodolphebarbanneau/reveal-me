@@ -54,6 +54,7 @@ The following table outlines the options available in `reveal-me`:
 | Option                            | Description                                                         |
 |-----------------------------------|---------------------------------------------------------------------|
 | `-v`, `--version`                 | Output the version number.                                          |
+| `-i`, `--init`                    | Initialize a new project.                                           |
 | `--extensions` `<exts>`           | A comma-separated list of file extensions to include.               |
 | `-c`, `--config` `<path>`         | Path to the configuration file.                                     |
 | `--project` `<name>`              | Name of the project.                                                |

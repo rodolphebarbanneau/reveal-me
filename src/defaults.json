@@ -17,7 +17,7 @@
   "themePaths": [],
   "presentation": {
     "featured": 1,
-    "theme": "black",
+    "theme": "white",
     "highlightTheme": "monokai-sublime",
     "separators": {
       "horizontalSeparator": "\r?\n---\r?\n",
