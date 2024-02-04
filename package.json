@@ -5,6 +5,10 @@
   "version": "0.1.0",
   "license": "MIT",
   "description": "Craft stunning Reveal.js presentations effortlessly from your Markdown files.",
+  "author": {
+    "name": "Rodolphe Barbanneau",
+    "email": "rodolphe.barbanneau@gmail.com"
+  },
   "bin": {
     "reveal-me": "src/main.js"
   },
