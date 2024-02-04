@@ -5,8 +5,14 @@
   "version": "0.1.0",
   "license": "MIT",
   "description": "Craft stunning Reveal.js presentations effortlessly from your Markdown files.",
+  "bin": {
+    "reveal-me": "src/main.js"
+  },
+  "files": [
+    "src"
+  ],
   "scripts": {
-    "start": "node src/main.js ~examples --watch",
+    "start": "node src/main.js src/examples --watch",
     "lint": "eslint lib tests",
     "format": "prettier --write src/**/*.js tests/*.js *.md",
     "test": "jest tests/*.spec.js",
