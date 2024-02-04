@@ -2,7 +2,7 @@
   "type": "module",
   "private": false,
   "name": "reveal-me",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "license": "MIT",
   "description": "Craft stunning Reveal.js presentations effortlessly from your Markdown files.",
   "author": {
