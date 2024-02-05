@@ -9,7 +9,7 @@
       "name": "Build and Print",
       "type": "node",
       "request": "launch",
-      "program": "${workspaceFolder}/src/main.js",
+      "program": "${workspaceFolder}/bin/main.js",
       "args": [
         "--build",
         "--print",
@@ -23,7 +23,7 @@
       "name": "Serve",
       "type": "node",
       "request": "launch",
-      "program": "${workspaceFolder}/src/main.js",
+      "program": "${workspaceFolder}/bin/main.js",
       "args": [
         "--watch",
       ],
