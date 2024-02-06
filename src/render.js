@@ -5,6 +5,7 @@ import handlebars from 'handlebars';
 import yamlFrontMatter from 'yaml-front-matter';
 import upath from 'upath';
 import { glob } from 'glob';
+import { pathToFileURL } from 'url';
 
 import configuration from './config.js';
 import { isDirectory, isFile, sanitize, searchFiles, toArray, toTitleCase } from './utils.js';
@@ -79,10 +80,12 @@ export const getPreprocessors = async (config) => {
   // Retrieve the preprocessor functions
   const preprocessors = [];
   for (const preprocessorPath of preprocessorPaths) {
-    const pattern = upath.join(config.assetsDir, preprocessorPath);
-    const matches = await glob(pattern, { nodir: true, posix: true });
+    const pattern = sanitize(preprocessorPath);
+    const matches = await glob(pattern, { cwd: config.assetsDir, nodir: true, posix: true });
     for (const match of matches.sort()) {
-      const { default: preprocessor } = await import(match);
+      const targetPath = upath.join(config.assetsDir, match);
+      const targetUrl = pathToFileURL(targetPath).href;
+      const { default: preprocessor } = await import(targetUrl);
       preprocessors.push(preprocessor);
     }
   }
@@ -178,19 +181,20 @@ export const getTemplateEngine = async (config, fromUrl = '/') => {
 
   // Register partials
   for (const partialPath of toArray(config.partialPaths)) {
-    const pattern = upath.join(config.assetsDir, partialPath);
-    const matches = await glob(pattern, { nodir: true, posix: true });
+    const pattern = sanitize(partialPath);
+    const matches = await glob(pattern, { cwd: config.assetsDir, nodir: true, posix: true });
     for (const match of matches.sort()) {
+      const targetPath = upath.join(config.assetsDir, match);
       // Check if the target path is a file or a directory
-      if (await isFile(match)) {
-        hbs.registerPartial(upath.parse(match).name, await fs.readFile(match, 'utf-8'));
+      if (await isFile(targetPath)) {
+        hbs.registerPartial(upath.parse(targetPath).name, await fs.readFile(targetPath, 'utf-8'));
       } else {
-        const fileNames = await fs.readdir(match);
+        const fileNames = await fs.readdir(targetPath);
         for (const fileName of fileNames) {
           if (fileName.endsWith('.hbs')) {
             hbs.registerPartial(
               upath.parse(fileName).name,
-              await fs.readFile(upath.join(match, fileName), 'utf-8'),
+              await fs.readFile(upath.join(targetPath, fileName), 'utf-8'),
             );
           }
         }
@@ -291,16 +295,15 @@ export const renderCollection = async (url, filter = '') => {
   // Retrieve collection
   const config = await configuration();
   const targetUrl = url.slice(config.baseUrl.length);
-  const targetPath = sanitize(targetUrl);
-  const isCollection = await isDirectory(upath.join(config.rootDir, targetPath));
+  const targetPath = upath.join(config.rootDir, sanitize(targetUrl));
+  const isCollection = await isDirectory(targetPath);
   if (!isCollection) throw new Error(`Collection not found: ${url}`);
 
   // Retrieve configuration
   const engine = await getTemplateEngine(config, url);
   const theme = await getTheme(config, url);
-  const searchDir = upath.join(config.rootDir, targetPath);
   const presentations = await searchFiles(filter, {
-    cwd: searchDir,
+    cwd: targetPath,
     exts: toArray(config.extensions),
   });
 
@@ -346,8 +349,8 @@ export const renderDocument = async (url) => {
   // Retrieve presentation document
   let config = await configuration();
   const targetUrl = url.slice(config.baseUrl.length);
-  const targetPath = sanitize(targetUrl);
-  const content = await fs.readFile(upath.join(config.rootDir, targetPath), 'utf-8').catch(() => {
+  const targetPath = upath.join(config.rootDir, sanitize(targetUrl));
+  const content = await fs.readFile(targetPath, 'utf-8').catch(() => {
     throw new Error(`Document not found: ${url}`);
   });
   const presentation = parseDocument(content);
@@ -414,7 +417,7 @@ export const renderDocument = async (url) => {
         // Handle relative hyperlinks
         const hyperlink = {
           url: upath.relative(upath.dirname(url), upath.join(endpoint, sub)),
-          path: upath.join(config.rootDir, upath.dirname(targetPath), sub),
+          path: upath.join(upath.dirname(targetPath), sub),
         };
         hyperlinks.push(hyperlink);
         return match;
@@ -432,23 +435,25 @@ export const renderDocument = async (url) => {
 
 /**
  * Renders an error.
- * @param {string} title - The error title to render.
- * @param {string} [description] - The error description to render.
- * @param {string} [content] - The error content to render.
+ * @param {string} url - The URL of the presentation document to render.
+ * @param {Object} [options] - The error options.
+ * @param {string} [options.code] - The error code to render.
+ * @param {string} [options.label] - The error label to render.
+ * @param {string} [options.message] - The error message to render.
  * @returns {Promise<string>} The rendered HTML error markup.
  */
-export const renderError = async (title, description = '', content = '') => {
+export const renderError = async (url, { code = '404', label = '', message = '' } = {}) => {
   // Retrieve configuration and template engine
   const config = await configuration();
-  const engine = await getTemplateEngine(config);
+  const engine = await getTemplateEngine(config, url);
 
   // Retrieve template options
   const options = {
     project: config.project,
     hasFavicon: config.hasFavicon,
-    title,
-    description,
-    content,
+    code,
+    label,
+    message,
   };
 
   // Compile template
