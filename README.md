@@ -5,15 +5,14 @@
 ![npm total downloads](https://img.shields.io/npm/dt/reveal-me.svg?style=flat-square)
 ![github stars](https://img.shields.io/github/stars/rodolphebarbanneau/reveal-me.svg?style=social&label=Star)
 
-
-<p align="center">
-  <a href="https://rodolphebarbanneau.github.io/reveal-me/" target="_blank" style="display: inline-block; background-color: #333333; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 18px; margin-bottom: 10px;">
-    🔥 Check Out the Live Demo! 🔥
-  </a>
-</p>
+<br>
 <p align="center">
   <img src="demo/cli.gif" alt="CLI">
 </p>
+
+## Live Demo 🔥
+
+Check out the 👉 [LIVE DEMO](https://rodolphebarbanneau.github.io/reveal-me/) to see `reveal-me` in action!
 
 
 ## Introduction
