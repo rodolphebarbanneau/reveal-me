@@ -7,7 +7,7 @@
 
 <br>
 <p align="center">
-  <img src="demo/cli.gif" alt="CLI">
+  <img src="docs/cli.gif" alt="CLI">
 </p>
 
 ## Live Demo 🔥
