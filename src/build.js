@@ -222,18 +222,14 @@ export const buildDocument = async (url) => {
 export default async (urls) => {
   // Retrieve configuration
   const config = await configuration();
-  const buildUrl = (await isDirectory(config.targetPath))
-    ? upath.join(config.baseUrl, sanitize(upath.relative(config.rootDir, config.targetPath)))
-    : null;
 
   // Retrieve documents and collections
   const documents = _.uniq(urls);
   const collections = _.uniq(
     documents.reduce((acc, url) => {
-      if (!buildUrl) return upath.dirname(url);
-      const segments = upath.relative(buildUrl, upath.dirname(url)).split('/');
-      const collections = segments.map((_, index) =>
-        upath.join(buildUrl, segments.slice(0, index + 1).join('/')),
+      const segments = upath.relative(config.baseUrl, upath.dirname(url)).split('/');
+      const collections = segments.map((value, index) =>
+        upath.join(config.baseUrl, segments.slice(0, index + 1).join('/')),
       );
       return [...acc, ...collections];
     }, []),
