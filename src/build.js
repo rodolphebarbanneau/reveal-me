@@ -223,7 +223,7 @@ export default async (urls) => {
   // Retrieve configuration
   const config = await configuration();
   const buildUrl = (await isDirectory(config.targetPath))
-    ? upath.join(config.baseUrl, upath.relative(config.rootDir, config.targetPath))
+    ? upath.join(config.baseUrl, sanitize(upath.relative(config.rootDir, config.targetPath)))
     : null;
 
   // Retrieve documents and collections

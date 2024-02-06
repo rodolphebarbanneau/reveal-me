@@ -15,7 +15,7 @@ import configuration, { CLI_OPTIONS } from '../src/config.js';
 import init from '../src/init.js';
 import print from '../src/print.js';
 import startServer from '../src/server.js';
-import { isDirectory, isFile, loadJSON, searchFiles, toArray } from '../src/utils.js';
+import { isDirectory, isFile, loadJSON, sanitize, searchFiles, toArray } from '../src/utils.js';
 
 /**
  * @typedef {import('../src/types').Config} Config
@@ -202,7 +202,7 @@ const promptForPresentation = async (config) => {
       const config = await configuration();
 
       // Retrieve target presentations URLs
-      let presentation = upath.relative(config.rootDir, config.targetPath);
+      let presentation = null;
       let presentations = [];
 
       if (config.targetPath.includes('*')) {
@@ -219,7 +219,8 @@ const promptForPresentation = async (config) => {
           presentation = answers.selection;
           presentations = [answers.selection];
         } else if (answers.confirm ?? true) {
-          presentations = await searchFiles(`${presentation ? presentation : '*'}*/**`, {
+          const filter = sanitize(upath.relative(config.rootDir, config.targetPath));
+          presentations = await searchFiles(`${filter ? filter : '*'}*/**`, {
             cwd: config.rootDir,
             exts: toArray(config.extensions),
           });
@@ -229,7 +230,7 @@ const promptForPresentation = async (config) => {
         }
       } else if (await isFile(config.targetPath)) {
         // Handle file target
-        presentations = [presentation];
+        presentations = [upath.relative(config.rootDir, config.targetPath)];
       }
 
       // Check if target URLs were found
@@ -239,8 +240,8 @@ const promptForPresentation = async (config) => {
       }
 
       // Retrieve presentation URLs
-      const url = upath.join(config.baseUrl, presentation);
-      const urls = presentations.map((url) => upath.join(config.baseUrl, url));
+      const url = upath.join(config.baseUrl, sanitize(presentation));
+      const urls = presentations.map((p) => upath.join(config.baseUrl, sanitize(p)));
 
       // Start the server
       const server = await startServer();
