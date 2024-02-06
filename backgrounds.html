@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <title>Backgrounds</title>
+
+
+
+    <link rel="stylesheet" href="modules/reveal/dist/reset.css" />
+    <link rel="stylesheet" href="modules/reveal/dist/reveal.css" />
+    <link rel="stylesheet" href="modules/reveal/dist/theme/white.css" id="theme" />
+    <link rel="stylesheet" href="modules/highlight/monokai-sublime.css" />
+
+
+  </head>
+  <body>
+    <div id="reveal" class="reveal">
+      <div id="slides" class="slides">
+        <!-- Cover -->
+
+        <!-- Presentation -->
+        
+
+<style type="text/css" media="screen">
+  .slides section.has-dark-background,
+  .slides section.has-dark-background h2 {
+    color: #fff;
+  }
+  .slides section.has-light-background,
+  .slides section.has-light-background h2 {
+    color: #222;
+  }
+</style>
+
+<section data-background="#00ffff">
+  <h2>data-background: #00ffff</h2>
+</section>
+
+<section data-background="#bb00bb">
+  <h2>data-background: #bb00bb</h2>
+</section>
+
+<section data-background-color="lightblue">
+  <h2>data-background: lightblue</h2>
+</section>
+
+<section>
+  <section data-background="#ff0000">
+    <h2>data-background: #ff0000</h2>
+  </section>
+  <section data-background="rgba(0, 0, 0, 0.2)">
+    <h2>data-background: rgba(0, 0, 0, 0.2)</h2>
+  </section>
+  <section data-background="salmon">
+    <h2>data-background: salmon</h2>
+  </section>
+</section>
+
+<section data-background="rgba(0, 100, 100, 0.2)">
+  <section>
+    <h2>Background applied to stack</h2>
+  </section>
+  <section>
+    <h2>Background applied to stack</h2>
+  </section>
+  <section data-background="rgb(66, 66, 66)">
+    <h2>Background applied to slide inside of stack</h2>
+  </section>
+</section>
+
+<section data-background-transition="slide" data-background="./assets/image1.png">
+  <h2>Background image</h2>
+</section>
+
+<section>
+  <section data-background-transition="slide" data-background="./assets/image1.png">
+    <h2>Background image</h2>
+  </section>
+  <section data-background-transition="slide" data-background="./assets/image1.png">
+    <h2>Background image</h2>
+  </section>
+</section>
+
+<section data-background="./assets/image2.png" data-background-size="100px" data-background-repeat="repeat" data-background-color="#111">
+  <h2>Background image</h2>
+  <pre>data-background-size="100px" data-background-repeat="repeat" data-background-color="#111"</pre>
+</section>
+
+<section data-background="#888888">
+  <h2>Same background twice (1/2)</h2>
+</section>
+<section data-background="#888888">
+  <h2>Same background twice (2/2)</h2>
+</section>
+
+<section data-background-video="https://s3.amazonaws.com/static.slid.es/site/homepage/v1/homepage-video-editor.mp4,https://s3.amazonaws.com/static.slid.es/site/homepage/v1/homepage-video-editor.webm">
+  <h2>Video background</h2>
+</section>
+
+<section data-background-iframe="https://slides.com/news/make-better-presentations/embed?style=hidden&autoSlide=4000">
+  <h2>Iframe background</h2>
+</section>
+
+<section>
+  <section data-background="#417203">
+    <h2>Same background twice vertical (1/2)</h2>
+  </section>
+  <section data-background="#417203">
+    <h2>Same background twice vertical (2/2)</h2>
+  </section>
+</section>
+
+<section data-background="#934f4d">
+  <h2>Same background from horizontal to vertical (1/3)</h2>
+</section>
+<section>
+  <section data-background="#934f4d">
+    <h2>Same background from horizontal to vertical (2/3)</h2>
+  </section>
+  <section data-background="#934f4d">
+    <h2>Same background from horizontal to vertical (3/3)</h2>
+  </section>
+</section>
+
+      </div>
+    </div>
+
+
+    <script src="modules/reveal/dist/reveal.js"></script>
+    <script src="modules/reveal/plugin/highlight/highlight.js"></script>
+    <script src="modules/reveal/plugin/markdown/markdown.js"></script>
+    <script src="modules/reveal/plugin/math/math.js"></script>
+    <script src="modules/reveal/plugin/notes/notes.js"></script>
+    <script src="modules/reveal/plugin/search/search.js"></script>
+    <script src="modules/reveal/plugin/zoom/zoom.js"></script>
+    <script src="modules/menu/menu.js"></script>
+
+
+    <script>
+      // Handle options merging
+      function mergeObjects(...objs) {
+        var target = {};
+        for (var i = 0; i < objs.length; i++) {
+          var source = objs[i];
+          for (var key in source) {
+            if (source.hasOwnProperty(key)) {
+              target[key] = source[key];
+            }
+          }
+        }
+        return target;
+      }
+
+      // Check if menu is disabled
+      var hasMenu = window.location.search.indexOf('menu=hide') === -1;
+
+      // Options from URL query string
+      var queryOptions = Reveal().getQueryHash() || {};
+      // Merge options and initialize reveal.js
+      var mergedOptions = mergeObjects({"view":"slide","transition":"slide","center":true,"controls":true,"hash":true,"history":true,"progress":true,"slideNumber":true,"mathjax2":{"config":"TeX-AMS_HTML-full","TeX":{"Macros":{"R":"\\mathbb{R}","set":["\\left\\{#1 \\; ; \\; #2\\right\\}",2]}}},"menu":{"side":"left","width":"normal","numbers":false,"titleSelector":"h1,h2,h3,h4","useTextContentForMissingTitles":false,"hideMissingTitles":false,"markers":true,"custom":[{"title":"Project","icon":"<i class='fa fa-sitemap'></i>","content":"<ul class='slide-menu-items'><li class='slide-menu-item'><a href='/'>Home</a></li><li class='slide-menu-item'><a href='./'>Directory</a></li><li class='slide-menu-item'><a href='?view=print'>Print</a></li></ul>"}],"themes":[{"name":"Beige","theme":"modules/reveal/dist/theme/beige.css"},{"name":"Black Contrast","theme":"modules/reveal/dist/theme/black-contrast.css"},{"name":"Black","theme":"modules/reveal/dist/theme/black.css"},{"name":"Blood","theme":"modules/reveal/dist/theme/blood.css"},{"name":"Dracula","theme":"modules/reveal/dist/theme/dracula.css"},{"name":"League","theme":"modules/reveal/dist/theme/league.css"},{"name":"Moon","theme":"modules/reveal/dist/theme/moon.css"},{"name":"Night","theme":"modules/reveal/dist/theme/night.css"},{"name":"Serif","theme":"modules/reveal/dist/theme/serif.css"},{"name":"Simple","theme":"modules/reveal/dist/theme/simple.css"},{"name":"Sky","theme":"modules/reveal/dist/theme/sky.css"},{"name":"Solarized","theme":"modules/reveal/dist/theme/solarized.css"},{"name":"White Contrast","theme":"modules/reveal/dist/theme/white-contrast.css"},{"name":"White","theme":"modules/reveal/dist/theme/white.css"},{"name":"White Contrast Compact Verbatim Headers","theme":"modules/reveal/dist/theme/white_contrast_compact_verbatim_headers.css"}],"transitions":false,"openButton":true,"openSlideNumber":false,"keyboard":true,"sticky":false,"autoOpen":true,"delayInit":false,"openOnInit":false,"loadIcons":true}}, queryOptions);
+      Reveal.initialize({
+        ...mergedOptions,
+        plugins: [
+          RevealMarkdown,
+          RevealHighlight,
+          RevealMath.KaTeX,
+          RevealMath.MathJax2,
+          RevealNotes,
+          RevealSearch,
+          RevealZoom,
+          ...(hasMenu ? [RevealMenu] : []),
+          ,
+        ],
+      });
+    </script>
+  </body>
+</html>

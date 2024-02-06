@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <title>Media</title>
+
+
+
+    <link rel="stylesheet" href="modules/reveal/dist/reset.css" />
+    <link rel="stylesheet" href="modules/reveal/dist/reveal.css" />
+    <link rel="stylesheet" href="modules/reveal/dist/theme/white.css" id="theme" />
+    <link rel="stylesheet" href="modules/highlight/monokai-sublime.css" />
+
+
+  </head>
+  <body>
+    <div id="reveal" class="reveal">
+      <div id="slides" class="slides">
+        <!-- Cover -->
+
+        <!-- Presentation -->
+        
+
+<section>
+  <h2>Examples of embedded Video, Audio and Iframes</h2>
+</section>
+
+<section>
+  <h2>Iframe</h2>
+  <iframe data-autoplay width="700" height="540" src="https://slides.com/news/auto-animate/embed" frameborder="0"></iframe>
+</section>
+
+<section data-background-iframe="https://www.youtube.com/embed/h1_nyI3z8gI" data-background-interactive>
+  <h2 style="color: #fff;">Iframe Background</h2>
+</section>
+
+<section>
+  <h2>Video</h2>
+  <video src="http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4" data-autoplay></video>
+</section>
+
+<section data-background-video="http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4">
+  <h2>Background Video</h2>
+</section>
+
+<section>
+  <h2>Auto-playing audio</h2>
+  <audio src="./assets/beeping.wav" data-autoplay></audio>
+</section>
+
+<section>
+  <h2>Audio inside slide fragments</h2>
+  <div class="fragment">
+    Beep 1
+    <audio src="./assets/beeping.wav" data-autoplay></audio>
+  </div>
+  <div class="fragment">
+    Beep 2
+    <audio src="./assets/beeping.wav" data-autoplay></audio>
+  </div>
+</section>
+
+<section>
+  <h2>Audio with controls</h2>
+  <audio src="./assets/beeping.wav" controls></audio>
+</section>
+
+      </div>
+    </div>
+
+
+    <script src="modules/reveal/dist/reveal.js"></script>
+    <script src="modules/reveal/plugin/highlight/highlight.js"></script>
+    <script src="modules/reveal/plugin/markdown/markdown.js"></script>
+    <script src="modules/reveal/plugin/math/math.js"></script>
+    <script src="modules/reveal/plugin/notes/notes.js"></script>
+    <script src="modules/reveal/plugin/search/search.js"></script>
+    <script src="modules/reveal/plugin/zoom/zoom.js"></script>
+    <script src="modules/menu/menu.js"></script>
+
+
+    <script>
+      // Handle options merging
+      function mergeObjects(...objs) {
+        var target = {};
+        for (var i = 0; i < objs.length; i++) {
+          var source = objs[i];
+          for (var key in source) {
+            if (source.hasOwnProperty(key)) {
+              target[key] = source[key];
+            }
+          }
+        }
+        return target;
+      }
+
+      // Check if menu is disabled
+      var hasMenu = window.location.search.indexOf('menu=hide') === -1;
+
+      // Options from URL query string
+      var queryOptions = Reveal().getQueryHash() || {};
+      // Merge options and initialize reveal.js
+      var mergedOptions = mergeObjects({"view":"slide","transition":"slide","center":true,"controls":true,"hash":true,"history":true,"progress":true,"slideNumber":true,"mathjax2":{"config":"TeX-AMS_HTML-full","TeX":{"Macros":{"R":"\\mathbb{R}","set":["\\left\\{#1 \\; ; \\; #2\\right\\}",2]}}},"menu":{"side":"left","width":"normal","numbers":false,"titleSelector":"h1,h2,h3,h4","useTextContentForMissingTitles":false,"hideMissingTitles":false,"markers":true,"custom":[{"title":"Project","icon":"<i class='fa fa-sitemap'></i>","content":"<ul class='slide-menu-items'><li class='slide-menu-item'><a href='/'>Home</a></li><li class='slide-menu-item'><a href='./'>Directory</a></li><li class='slide-menu-item'><a href='?view=print'>Print</a></li></ul>"}],"themes":[{"name":"Beige","theme":"modules/reveal/dist/theme/beige.css"},{"name":"Black Contrast","theme":"modules/reveal/dist/theme/black-contrast.css"},{"name":"Black","theme":"modules/reveal/dist/theme/black.css"},{"name":"Blood","theme":"modules/reveal/dist/theme/blood.css"},{"name":"Dracula","theme":"modules/reveal/dist/theme/dracula.css"},{"name":"League","theme":"modules/reveal/dist/theme/league.css"},{"name":"Moon","theme":"modules/reveal/dist/theme/moon.css"},{"name":"Night","theme":"modules/reveal/dist/theme/night.css"},{"name":"Serif","theme":"modules/reveal/dist/theme/serif.css"},{"name":"Simple","theme":"modules/reveal/dist/theme/simple.css"},{"name":"Sky","theme":"modules/reveal/dist/theme/sky.css"},{"name":"Solarized","theme":"modules/reveal/dist/theme/solarized.css"},{"name":"White Contrast","theme":"modules/reveal/dist/theme/white-contrast.css"},{"name":"White","theme":"modules/reveal/dist/theme/white.css"},{"name":"White Contrast Compact Verbatim Headers","theme":"modules/reveal/dist/theme/white_contrast_compact_verbatim_headers.css"}],"transitions":false,"openButton":true,"openSlideNumber":false,"keyboard":true,"sticky":false,"autoOpen":true,"delayInit":false,"openOnInit":false,"loadIcons":true}}, queryOptions);
+      Reveal.initialize({
+        ...mergedOptions,
+        plugins: [
+          RevealMarkdown,
+          RevealHighlight,
+          RevealMath.KaTeX,
+          RevealMath.MathJax2,
+          RevealNotes,
+          RevealSearch,
+          RevealZoom,
+          ...(hasMenu ? [RevealMenu] : []),
+          ,
+        ],
+      });
+    </script>
+  </body>
+</html>
