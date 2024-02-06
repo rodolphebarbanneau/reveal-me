@@ -131,36 +131,6 @@ describe('isWithinDirectory function tests', () => {
   });
 });
 
-describe('getDirectory function tests', () => {
-  afterEach(() => {
-    utils.isDirectory.cache.clear();
-    jest.resetAllMocks();
-    jest.restoreAllMocks();
-  });
-
-  test('should return the directory of a directory path', async () => {
-    fs.stat.mockResolvedValue({ isDirectory: async () => true });
-    const result = await utils.getDirectory('path/to/directory');
-    expect(result).toBe('path/to/directory');
-  });
-
-  test('should return the directory of a file path', async () => {
-    fs.stat.mockImplementation(async () => ({ isDirectory: async () => true }));
-    fs.stat.mockImplementationOnce(async () => ({ isDirectory: async () => false }));
-    const result = await utils.getDirectory('path/to/file.txt');
-    expect(result).toBe('path/to');
-  });
-
-  test('should handle errors from is directory', async () => {
-    fs.stat.mockResolvedValue({ isDirectory: async () => false });
-    try {
-      await utils.getDirectory('path/to/directory');
-    } catch (error) {
-      expect(true).toBe(true);
-    }
-  });
-});
-
 describe('getReadablePath function tests', () => {
   test('should return an identical path for a short file path', () => {
     const result = utils.getReadablePath('short/file.txt');
@@ -220,7 +190,6 @@ describe('makeDirectory function tests', () => {
 
   test('should create a directory if it does not exist', async () => {
     const targetPath = 'path/to/new/directory';
-    fs.stat.mockResolvedValue({ isDirectory: () => false });
     fs.access.mockRejectedValue(new NoEntryError());
     fs.mkdir.mockResolvedValue(targetPath);
     const result = await utils.makeDirectory(targetPath);
@@ -231,7 +200,6 @@ describe('makeDirectory function tests', () => {
 
   test('should not create a directory if it already exists', async () => {
     const targetPath = 'path/to/existing/directory';
-    fs.stat.mockResolvedValue({ isDirectory: () => true });
     fs.access.mockResolvedValue(undefined);
     const result = await utils.makeDirectory(targetPath);
     expect(result).toBe(undefined);
@@ -239,10 +207,20 @@ describe('makeDirectory function tests', () => {
     expect(fs.mkdir).not.toHaveBeenCalled();
   });
 
+  test('should handle file path and create the parent directory', async () => {
+    const targetPath = 'path/to/new/file.txt';
+    const targetDir = 'path/to/new';
+    fs.access.mockRejectedValue(new NoEntryError());
+    fs.mkdir.mockResolvedValue(targetDir);
+    const result = await utils.makeDirectory(targetPath);
+    expect(result).toBe(targetDir);
+    expect(fs.access).toHaveBeenCalledWith(targetDir);
+    expect(fs.mkdir).toHaveBeenCalledWith(targetDir, { recursive: true });
+  });
+
   test('should handle other errors', async () => {
     const targetPath = 'path/to/error/directory';
     const customError = new Error('Custom error message');
-    fs.stat.mockResolvedValue({ isDirectory: () => true });
     fs.access.mockRejectedValue(customError);
     try {
       await utils.makeDirectory(targetPath);
