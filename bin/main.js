@@ -256,7 +256,7 @@ const promptForPresentation = async (config) => {
       } else if (config.open) {
         open(`http://${config.host}:${config.port}${url}`);
         process.on('SIGINT', () => {
-          console.log('👋 Shutting down server...');
+          console.log('Shutting down server... 👋');
           server.close();
           process.exit(0);
         });
