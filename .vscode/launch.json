@@ -6,12 +6,24 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Build and Print",
+      "name": "Build",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/bin/main.js",
       "args": [
-        "--build",
+        "--build"
+      ],
+      "console": "integratedTerminal",
+      "skipFiles": [
+          "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "Print",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/main.js",
+      "args": [
         "--print"
       ],
       "console": "integratedTerminal",
