@@ -169,7 +169,9 @@ export const searchFiles = async (
   const patterns = filter.includes('*') ? [filter] : [`**/*${filter}*`, `**/*${filter}*/**`];
   const globs = patterns.map((pattern) => glob(pattern, { cwd, nodir: true, posix: true }));
   const results = await Promise.all(globs);
-  const matches = _.uniq(_.flatten(results)).sort();
+  const matches = _.uniq(_.flatten(results))
+    .map((match) => match.replace(/^\\\\\?\\/, ''))
+    .sort();
 
   // Filter files by extension
   const files = [];

@@ -82,7 +82,11 @@ export default async () => {
           res.send(markup);
         } catch (error) {
           console.debug('⚠️ Error serving collection:\n', error);
-          const markup = await renderError('500', 'Error serving collection.', error.message);
+          const markup = await renderError(url, {
+            code: '500',
+            label: 'Error serving collection.',
+            message: error.message,
+          });
           res.status(500).send(markup);
         }
       }
@@ -93,7 +97,11 @@ export default async () => {
         res.send(markup);
       } catch (error) {
         console.debug('⚠️ Error serving presentation:\n', error);
-        const markup = await renderError('500', 'Error serving presentation.', error.message);
+        const markup = await renderError(url, {
+          code: '500',
+          label: 'Error serving presentation.',
+          message: error.message,
+        });
         res.status(500).send(markup);
       }
     } else {
@@ -106,11 +114,11 @@ export default async () => {
 
   // Serve "404" error page if no route was matched
   app.use('*', async (req, res) => {
-    const markup = await renderError(
-      '404',
-      'Page not found.',
-      "The page you're looking for doesn't exist.",
-    );
+    const markup = await renderError(req.url, {
+      code: '404',
+      label: 'Page not found.',
+      message: "The page you're looking for doesn't exist.",
+    });
     res.status(404).send(markup);
   });
 

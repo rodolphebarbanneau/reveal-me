@@ -11,7 +11,7 @@
   "assetsDir": ".",
   "templatePath": "~templates/main.hbs",
   "preprocessorPaths": ["preprocessor.js"],
-  "partialPaths": ["partials/**/*.{hbs,html,md}"],
+  "partialPaths": ["partials/**/*.{hbs,handlebars,mustache}"],
   "scriptPaths": ["scripts/**/*.js"],
   "stylePaths": ["styles/**/*.css"],
   "themePaths": [],
