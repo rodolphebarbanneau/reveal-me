@@ -1,5 +1,21 @@
 # 🤙 `reveal-me`
 
+![npm version](https://img.shields.io/npm/v/reveal-me.svg?style=flat-square)
+![npm downloads](https://img.shields.io/npm/dm/reveal-me.svg?style=flat-square)
+![npm total downloads](https://img.shields.io/npm/dt/reveal-me.svg?style=flat-square)
+![github stars](https://img.shields.io/github/stars/rodolphebarbanneau/reveal-me.svg?style=social&label=Star)
+
+
+<p align="center">
+  <a href="https://rodolphebarbanneau.github.io/reveal-me/" target="_blank" style="display: inline-block; background-color: #333333; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 18px; margin-bottom: 10px;">
+    🔥 Check Out the Live Demo! 🔥
+  </a>
+</p>
+<p align="center">
+  <img src="demo/cli.gif" alt="CLI">
+</p>
+
+
 ## Introduction
 
 `reveal-me` is a powerful command-line interface (CLI) tool designed to enhance the experience of creating, managing, and presenting slideshows with [reveal.js](https://revealjs.com/). It simplifies the workflow for users by offering features such as live reloading, presentation serving, and more, directly from the command line.
@@ -7,6 +23,7 @@
 ## Table of Contents
 
 1. [Installation](#installation)
+2. [Project Initialization (Optional)](#project-initialization-optional)
 2. [CLI Usage](#cli-usage)
    - [Commands](#commands)
    - [Options](#options)
@@ -26,13 +43,56 @@
 
 ## Installation
 
-To get started with `reveal-me`, you must have [Node.js](https://nodejs.org/en) installed on your machine. Once [Node.js](https://nodejs.org/en) is set up, you can install `reveal-me` globally using npm:
+To get started with `reveal-me`, you must have [Node.js](https://nodejs.org/en) installed on your machine. Once [Node.js](https://nodejs.org/en) is set up, you can install `reveal-me` globally using npm with admin privileges (e.g. use `sudo` on Linux or macOS, or run the command prompt as an administrator on Windows).
 
 ```bash
 npm install -g reveal-me
 ```
 
 This makes the `reveal-me` command available globally.
+
+## Project Initialization (Optional)
+
+To create a new project with `reveal-me`, first navigate to the directory where you want to create the project.
+
+```bash
+mkdir /path/to/my-project
+cd /path/to/my-project
+```
+
+Then, run the `reveal-me` command with the `-i` or `--init` option to create a new project. It will prompt you to enter configuration details for the project, such as the project name, description, and other settings.
+
+```bash
+reveal-me --init
+```
+
+This will generate a new project with a default configuration file and directory structure. You can then add your presentations to the project and customize the configuration as needed.
+
+```bash
+# /path/to/my-project
+
+└── my-project/
+    ├── assets/                 # Assets directory for images, scripts, and styles
+    │   ├── images/             # Use "@/images/..." in your slides to reference items in this directory
+    │   ├── partials/
+    │   ├── scripts/
+    │   ├── styles/
+    │   ├── favicon.ico
+    │   ├── favicon-16x16.png
+    │   ├── favicon-32x32.png
+    │   └── preprocessor.js
+    ├── src/                    # Source directory for presentations content
+    │   └── hello-world.md
+    ├── config.json
+    ├── package.json
+    └── README.md
+```
+
+Now you can start creating presentations in the `src` directory and use the `reveal-me` command to serve or build them.
+
+```bash
+reveal-me . --watch
+```
 
 ## CLI Usage
 
