@@ -164,13 +164,20 @@ export default _.memoize(async (presentationConfig = {}) => {
   Object.values(config.modules).forEach(
     (value) => (value.url = sanitize(value.url, { leading: true })),
   );
-  // Update configuration paths
-  config.packageDir = __dirname;
-  config.targetDir = targetDir;
-  config.targetPath = targetPath;
+  // Update configuration presentation paths
   config.outDir = upath.join(targetDir, config.outDir);
   config.rootDir = upath.join(targetDir, config.rootDir);
   config.assetsDir = upath.join(targetDir, config.assetsDir);
+  // Update configuration target path
+  config.packageDir = __dirname;
+  config.targetDir = targetDir;
+  if (isWithinDirectory(targetPath, config.rootDir)) {
+    config.targetPath = targetPath;
+  } else if (targetPath === targetDir) {
+    config.targetPath = config.rootDir;
+  } else {
+    throw new Error('The target path must be within the root directory');
+  }
   // Update configuration modules
   config.modules['assets'].path = config.assetsDir;
   // Update configuration sources

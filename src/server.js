@@ -49,7 +49,10 @@ export default async () => {
 
   // Serve favicon
   const faviconPath = upath.join(config.assetsDir, 'favicon.ico');
-  const hasFavicon = await fs.stat(faviconPath).catch(() => false);
+  const hasFavicon = await fs
+    .stat(faviconPath)
+    .then(() => true)
+    .catch(() => false);
   if (hasFavicon) app.use(favicon(faviconPath));
 
   // Serve modules static files (highlight.js, reveal.js, assets modules...)

@@ -200,27 +200,23 @@ const promptForPresentation = async (config) => {
 
       // Retrieve configuration
       const config = await configuration();
+      const targetUrl = upath.relative(config.rootDir, config.targetPath);
 
-      // Retrieve target presentations URLs
-      let presentation = null;
+      // Retrieve presentations URLs
       let presentations = [];
-
       if (config.targetPath.includes('*')) {
         // Handle wildcard target
         presentations = await searchFiles(config.targetPath, {
           cwd: config.rootDir,
           exts: toArray(config.extensions),
         });
-        presentation = presentations.length ? presentations[0] : '';
       } else if (await isDirectory(config.targetPath)) {
         // Handle directory target
         const answers = argv.all ? { confirm: true } : await promptForPresentation(config);
         if (answers.select ?? true) {
-          presentation = answers.selection;
           presentations = [answers.selection];
         } else if (answers.confirm ?? true) {
-          const filter = sanitize(upath.relative(config.rootDir, config.targetPath));
-          presentations = await searchFiles(`${filter ? filter : '*'}*/**`, {
+          presentations = await searchFiles(`${targetUrl ? targetUrl : '*'}*/**`, {
             cwd: config.rootDir,
             exts: toArray(config.extensions),
           });
@@ -230,7 +226,7 @@ const promptForPresentation = async (config) => {
         }
       } else if (await isFile(config.targetPath)) {
         // Handle file target
-        presentations = [upath.relative(config.rootDir, config.targetPath)];
+        presentations = [targetUrl];
       }
 
       // Check if target URLs were found
@@ -240,11 +236,18 @@ const promptForPresentation = async (config) => {
       }
 
       // Retrieve presentation URLs
-      const url = upath.join(config.baseUrl, sanitize(presentation));
-      const urls = presentations.map((p) => upath.join(config.baseUrl, sanitize(p)));
+      const urls = presentations.map((presentation) =>
+        upath.join(config.baseUrl, sanitize(presentation)),
+      );
 
       // Start the server
       const server = await startServer();
+      // Handle server shutdown
+      process.on('SIGINT', () => {
+        console.log('Shutting down server... 👋');
+        server.close();
+        process.exit(0);
+      });
 
       // Handle build and print operations
       if (config.build) await build(urls);
@@ -255,13 +258,9 @@ const promptForPresentation = async (config) => {
         server.close();
         process.exit(0);
       } else if (config.open) {
-        open(`http://${config.host}:${config.port}${url}`);
-        process.on('SIGINT', () => {
-          console.log('Shutting down server... 👋');
-          server.close();
-          process.exit(0);
-        });
+        open(`http://${config.host}:${config.port}${urls[0]}`);
       }
+      console.log('💡 Press ^C to exit...');
     } catch (error) {
       console.error('😱 Failed to serve presentations:\n', error);
       process.exit(1);
