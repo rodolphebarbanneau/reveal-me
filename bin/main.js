@@ -200,26 +200,31 @@ const promptForPresentation = async (config) => {
 
       // Retrieve configuration
       const config = await configuration();
-      const targetUrl = upath.relative(config.rootDir, config.targetPath);
 
       // Retrieve presentations URLs
+      let targetUrl = upath.relative(config.rootDir, config.targetPath);
       let presentations = [];
+
       if (config.targetPath.includes('*')) {
         // Handle wildcard target
         presentations = await searchFiles(config.targetPath, {
           cwd: config.rootDir,
           exts: toArray(config.extensions),
         });
+        targetUrl = presentations.length === 1 ? presentations[0] : `?filter=${targetUrl}`;
       } else if (await isDirectory(config.targetPath)) {
         // Handle directory target
         const answers = argv.all ? { confirm: true } : await promptForPresentation(config);
-        if (answers.select ?? true) {
-          presentations = [answers.selection];
-        } else if (answers.confirm ?? true) {
-          presentations = await searchFiles(`${targetUrl ? targetUrl : '*'}*/**`, {
-            cwd: config.rootDir,
-            exts: toArray(config.extensions),
-          });
+        if (answers.confirm ?? true) {
+          if (answers.select ?? true) {
+            presentations = [answers.selection];
+            targetUrl = answers.selection;
+          } else {
+            presentations = await searchFiles(`${targetUrl ? targetUrl : '*'}*/**`, {
+              cwd: config.rootDir,
+              exts: toArray(config.extensions),
+            });
+          }
         } else {
           console.log('❌ Operation aborted');
           process.exit(0);
@@ -236,6 +241,7 @@ const promptForPresentation = async (config) => {
       }
 
       // Retrieve presentation URLs
+      targetUrl = upath.join(config.baseUrl, targetUrl);
       const urls = presentations.map((presentation) =>
         upath.join(config.baseUrl, sanitize(presentation)),
       );
@@ -258,7 +264,7 @@ const promptForPresentation = async (config) => {
         server.close();
         process.exit(0);
       } else if (config.open) {
-        open(`http://${config.host}:${config.port}${urls[0]}`);
+        open(`http://${config.host}:${config.port}${targetUrl}`);
       }
       console.log('💡 Press ^C to exit...');
     } catch (error) {
