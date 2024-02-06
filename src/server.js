@@ -1,9 +1,9 @@
 import fs from 'node:fs/promises';
-import path from 'node:path';
 
 import chokidar from 'chokidar';
 import express from 'express';
 import favicon from 'serve-favicon';
+import upath from 'upath';
 import ws, { WebSocketServer } from 'ws';
 
 import configuration from './config.js';
@@ -48,7 +48,7 @@ export default async () => {
   const wss = new WebSocketServer({ server });
 
   // Serve favicon
-  const faviconPath = path.join(config.assetsDir, 'favicon.ico');
+  const faviconPath = upath.join(config.assetsDir, 'favicon.ico');
   const hasFavicon = await fs.stat(faviconPath).catch(() => false);
   if (hasFavicon) app.use(favicon(faviconPath));
 
@@ -56,18 +56,18 @@ export default async () => {
   Object.values(config.modules).forEach((value) => app.use(value.url, serveStatic(value.path)));
 
   // Serve resource
-  app.get('/*', async (req, res, next) => {
-    // Redirect to base URL if none is specified
-    if (req.url === '/' && config.baseUrl !== '') return res.redirect(config.baseUrl);
+  app.get('*', async (req, res, next) => {
     // Skip if URL doesn't match base URL
-    if (!req.url.startsWith(config.baseUrl)) return next();
+    const uri = decodeURIComponent(req.url);
+    if (uri === '/' && config.baseUrl !== '') return res.redirect(config.baseUrl);
+    if (!uri.startsWith(config.baseUrl)) return next();
 
-    // Retrieve resource information
-    const resourceUrl = sanitize(decodeURIComponent(req.url));
-    const resourceExtension = path.extname(resourceUrl);
+    // Retrieve resource
+    const url = sanitize(uri, { leading: true });
+    const extension = upath.extname(url);
 
     // Render resource
-    if (!resourceExtension) {
+    if (!extension) {
       // Render collection
       if (req.path.slice(-1) !== '/') {
         const query = req.url.slice(req.path.length);
@@ -75,21 +75,21 @@ export default async () => {
       } else {
         try {
           const filter = req.query.filter ? req.query.filter.toString() : '';
-          const markup = await renderCollection(resourceUrl, filter);
+          const markup = await renderCollection(url, filter);
           res.send(markup);
         } catch (error) {
-          console.debug('Error serving collection:\n', error);
+          console.debug('⚠️ Error serving collection:\n', error);
           const markup = await renderError('500', 'Error serving collection.', error.message);
           res.status(500).send(markup);
         }
       }
-    } else if (toArray(config.extensions).includes(resourceExtension)) {
+    } else if (toArray(config.extensions).includes(extension)) {
       // Render presentation
       try {
-        const [markup] = await renderDocument(resourceUrl);
+        const [markup] = await renderDocument(url);
         res.send(markup);
       } catch (error) {
-        console.debug('Error serving presentation:\n', error);
+        console.debug('⚠️ Error serving presentation:\n', error);
         const markup = await renderError('500', 'Error serving presentation.', error.message);
         res.status(500).send(markup);
       }
@@ -132,18 +132,20 @@ export default async () => {
     }, 300);
     // Watch for changes in the presentation file content...
     watcher.on('change', (filePath) => {
-      console.log(`File updated: ${filePath}`);
+      console.debug(`★ File updated: ${filePath}`);
       sendReload();
     });
     // Watch for errors...
-    watcher.on('error', (error) => console.error(`Watcher error: ${error}`));
+    watcher.on('error', (error) => console.debug(`⚠️ Watcher error: ${error}`));
   };
 
   // Watch for changes in the presentation file content...
-  watchPath(config.assetsDir, true);
-  watchPath(config.rootDir, true);
+  if (config.watch) {
+    watchPath(config.assetsDir, true);
+    watchPath(config.rootDir, true);
+  }
 
-  console.log(`Presentations server running at http://${config.host}:${config.port}`);
+  console.log(`🚀 Presentations server running at http://${config.host}:${config.port}`);
 
   return server;
 };

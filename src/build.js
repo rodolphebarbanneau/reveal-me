@@ -1,14 +1,21 @@
-/* eslint-disable no-console */
-import path from 'node:path';
 import fs from 'node:fs/promises';
 
 import _ from 'lodash';
 import createDebug from 'debug';
+import upath from 'upath';
 import { glob } from 'glob';
+import { minimatch } from 'minimatch';
 
 import configuration from './config.js';
 import { renderCollection, renderDocument } from './render.js';
-import { isDirectory, getReadablePath, makeDirectory, sanitize } from './utils.js';
+import {
+  isDirectory,
+  getReadablePath,
+  makeDirectory,
+  sanitize,
+  searchFiles,
+  toArray,
+} from './utils.js';
 
 /**
  * @typedef {import('./types').File} File
@@ -22,35 +29,38 @@ const debug = createDebug('reveal-me');
  * @param {string} from - The source directory or file path.
  * @param {string} to - The destination directory or file path.
  * @param {Map<string, File>} files - The map of files.
+ * @param {object} [options] - The matching options.
+ * @param {string[]} [options.include] - The matching patterns to include.
+ * @param {string[]} [options.exclude] - The matching patterns to exclude.
  * @returns {Promise<Map<string, File>>} The updated map of files.
  */
-export const copy = async (from, to, files = new Map()) => {
+export const copy = async (from, to, files = new Map(), { include = [], exclude = [] } = {}) => {
   /**
    * Sets a file in the map.
    * @param {string} [match] - The relative match path.
    */
   const set = (match = '') => {
     if (!files.has(to)) {
-      const fromMatch = path.join(from, match);
-      const toMatch = path.join(to, match);
-      console.log(`❏ ${getReadablePath(fromMatch)} → ${getReadablePath(toMatch)}`);
-      const buffer = fs.readFile(fromMatch);
-      files.set(toMatch, { path: fromMatch, buffer });
+      const fromMatch = upath.join(from, match);
+      const toMatch = upath.join(to, match);
+      if (
+        (include.length === 0 || include.some((pattern) => minimatch(fromMatch, pattern))) &&
+        (exclude.length === 0 || !exclude.some((pattern) => minimatch(fromMatch, pattern)))
+      ) {
+        console.debug(`❏ ${getReadablePath(fromMatch)} → ${getReadablePath(toMatch)}`);
+        const buffer = fs.readFile(fromMatch);
+        files.set(toMatch, { path: fromMatch, buffer });
+      }
     }
   };
 
-  try {
-    if (await isDirectory(from)) {
-      const matches = await glob('**/*.*', { cwd: from, posix: true });
-      for (const match of matches) {
-        set(match);
-      }
-    } else {
-      set();
+  if (await isDirectory(from)) {
+    const matches = await glob('**/*.*', { cwd: from, nodir: true, posix: true });
+    for (const match of matches) {
+      set(match);
     }
-  } catch (error) {
-    console.error('Error copying files:\n', error);
-    throw error;
+  } else {
+    set();
   }
 
   return files;
@@ -73,20 +83,15 @@ export const minify = async (files) => {
  */
 export const write = async (files) => {
   const operations = [];
-  try {
-    for (const [destination, file] of files.entries()) {
-      const operation = (async () => {
-        console.log(`★ ${getReadablePath(file.path)} → ${getReadablePath(destination)}`);
-        const data = await file.buffer;
-        await makeDirectory(destination);
-        await fs.writeFile(destination, data);
-        return destination;
-      })();
-      operations.push(operation);
-    }
-  } catch (error) {
-    console.error('Error writing files:\n', error);
-    throw error;
+  for (const [destination, file] of files.entries()) {
+    const operation = (async () => {
+      console.debug(`★ ${getReadablePath(file.path)} → ${getReadablePath(destination)}`);
+      const data = await file.buffer;
+      await makeDirectory(destination);
+      await fs.writeFile(destination, data);
+      return destination;
+    })();
+    operations.push(operation);
   }
 
   return Promise.all(operations);
@@ -100,26 +105,63 @@ export const buildModules = async () => {
   // Retrieve configuration
   const config = await configuration();
 
+  // Retrieve excluded files
+  const { cli, defaults } = config.sources;
+  const configPath = upath.join(config.targetDir, cli.config || defaults.config);
+  const presentations = await searchFiles('', {
+    cwd: config.rootDir,
+    exts: toArray(config.extensions),
+    resolve: true,
+  });
+
   // Log
   debug({ modules: config.modules, outDir: config.outDir });
-  console.log(`Building modules to "${config.outDir}"...`);
+  console.log(`👉 Building modules to "${config.outDir}"...`);
 
   // Build
   try {
     const files = new Map();
     for (const module of Object.values(config.modules)) {
       const from = module.path;
-      const to = path.join(config.outDir, module.url);
-      await copy(from, to, files);
+      const to = upath.join(config.outDir, module.url);
+      await copy(from, to, files, { exclude: [configPath, ...presentations] });
     }
     await write(files);
   } catch (error) {
-    console.error(`Error building modules to "${config.outDir}":\n`, error);
+    console.error(`😱 Error building modules to "${config.outDir}":\n`, error);
     debug(error);
   }
 
-  console.log(`Successfully built modules to "${config.outDir}"`);
+  console.log(`✅ Successfully built modules to "${config.outDir}"`);
   return config.outDir;
+};
+
+/**
+ * Builds a collection.
+ * @param {string} url - The collection URL to build.
+ * @returns {Promise<string>} The path to the built collection.
+ */
+export const buildCollection = async (url) => {
+  // Retrieve configuration
+  const config = await configuration();
+  const buildUrl = sanitize(url, { leading: true });
+  const builPath = upath.join(config.outDir, buildUrl.replace(/\.[^.]*$/, ''), 'index.html');
+
+  // Log
+  debug({ buildUrl, builPath });
+  console.log(`👉 Building ":/${buildUrl}" to "${builPath}"...`);
+
+  try {
+    const markup = await renderCollection(buildUrl);
+    await makeDirectory(builPath);
+    await fs.writeFile(builPath, markup);
+  } catch (error) {
+    console.error(`😱 Error building ":/${buildUrl}" to "${builPath}":\n`, error);
+    debug(error);
+  }
+
+  console.log(`✅ Successfully built ":/${buildUrl}" to "${builPath}"`);
+  return builPath;
 };
 
 /**
@@ -130,12 +172,12 @@ export const buildModules = async () => {
 export const buildDocument = async (url) => {
   // Retrieve configuration
   const config = await configuration();
-  const buildUrl = sanitize(url, { prefix: '/' });
-  const builPath = path.join(config.outDir, buildUrl.replace(/\.[^.]*$/, '.html'));
+  const buildUrl = sanitize(url, { leading: true });
+  const builPath = upath.join(config.outDir, buildUrl.replace(/\.[^.]*$/, '.html'));
 
   // Log
   debug({ buildUrl, builPath });
-  console.log(`Building ":/${buildUrl}" to "${builPath}"...`);
+  console.log(`👉 Building ":/${buildUrl}" to "${builPath}"...`);
 
   // Build
   try {
@@ -153,10 +195,10 @@ export const buildDocument = async (url) => {
     const files = new Map();
     for (const hyperlink of hyperlinks) {
       const from = hyperlink.path;
-      const to = path.join(
+      const to = upath.join(
         config.outDir,
         config.baseUrl,
-        sanitize(path.relative(config.rootDir, hyperlink.path)),
+        upath.relative(config.rootDir, hyperlink.path),
       );
       await copy(from, to, files);
     }
@@ -164,39 +206,11 @@ export const buildDocument = async (url) => {
     // Execute operations
     await Promise.all(operations);
   } catch (error) {
-    console.error(`Error building ":/${buildUrl}" to "${builPath}":\n`, error);
+    console.error(`😱 Error building ":/${buildUrl}" to "${builPath}":\n`, error);
     debug(error);
   }
 
-  console.log(`Successfully built ":/${buildUrl}" to "${builPath}"`);
-  return builPath;
-};
-
-/**
- * Builds a collection.
- * @param {string} url - The collection URL to build.
- * @returns {Promise<string>} The path to the built collection.
- */
-export const buildCollection = async (url) => {
-  // Retrieve configuration
-  const config = await configuration();
-  const buildUrl = sanitize(url, { prefix: '/' });
-  const builPath = path.join(config.outDir, buildUrl.replace(/\.[^.]*$/, ''), 'index.html');
-
-  // Log
-  debug({ buildUrl, builPath });
-  console.log(`Building ":/${buildUrl}" to "${builPath}"...`);
-
-  try {
-    const markup = await renderCollection(buildUrl);
-    await makeDirectory(builPath);
-    await fs.writeFile(builPath, markup);
-  } catch (error) {
-    console.error(`Error building ":/${buildUrl}" to "${builPath}":\n`, error);
-    debug(error);
-  }
-
-  console.log(`Successfully built ":/${buildUrl}" to "${builPath}"`);
+  console.log(`✅ Successfully built ":/${buildUrl}" to "${builPath}"`);
   return builPath;
 };
 
@@ -209,17 +223,17 @@ export default async (urls) => {
   // Retrieve configuration
   const config = await configuration();
   const buildUrl = (await isDirectory(config.targetPath))
-    ? path.join(config.baseUrl, path.relative(config.rootDir, config.targetPath))
+    ? upath.join(config.baseUrl, upath.relative(config.rootDir, config.targetPath))
     : null;
 
   // Retrieve documents and collections
   const documents = _.uniq(urls);
   const collections = _.uniq(
     documents.reduce((acc, url) => {
-      if (!buildUrl) return path.dirname(url);
-      const segments = path.relative(buildUrl, path.dirname(url)).split('/');
+      if (!buildUrl) return upath.dirname(url);
+      const segments = upath.relative(buildUrl, upath.dirname(url)).split('/');
       const collections = segments.map((_, index) =>
-        path.join(buildUrl, segments.slice(0, index + 1).join('/')),
+        upath.join(buildUrl, segments.slice(0, index + 1).join('/')),
       );
       return [...acc, ...collections];
     }, []),

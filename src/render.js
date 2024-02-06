@@ -1,13 +1,13 @@
 import fs from 'node:fs/promises';
-import path from 'node:path';
 
 import _ from 'lodash';
 import handlebars from 'handlebars';
 import yamlFrontMatter from 'yaml-front-matter';
+import upath from 'upath';
 import { glob } from 'glob';
 
 import configuration from './config.js';
-import { isDirectory, isFile, searchFiles, toArray, toTitleCase } from './utils.js';
+import { isDirectory, isFile, sanitize, searchFiles, toArray, toTitleCase } from './utils.js';
 
 /**
  * @typedef {import('express').Request} Request
@@ -38,16 +38,17 @@ export const isAbsoluteUrl = (url) => {
  */
 export const getAssets = async (assetsModule, assetsPaths, fromUrl = '/') => {
   // Evaluate URL and absolute path for each asset path
+  const url = upath.extname(fromUrl) ? upath.dirname(fromUrl) : fromUrl;
   const assets = [];
   for (const assetsPath of toArray(assetsPaths)) {
     if (isAbsoluteUrl(assetsPath)) {
       assets.push({ url: assetsPath.toString(), path: null });
     } else {
-      const matches = (await glob(assetsPath, { cwd: assetsModule.path, posix: true })).sort();
-      for (const match of matches) {
+      const matches = await glob(assetsPath, { cwd: assetsModule.path, nodir: true, posix: true });
+      for (const match of matches.sort()) {
         assets.push({
-          url: path.relative(path.dirname(fromUrl), path.join(assetsModule.url, match)),
-          path: path.join(assetsModule.path, match),
+          url: upath.relative(url, upath.join(assetsModule.url, match)),
+          path: upath.join(assetsModule.path, match),
         });
       }
     }
@@ -78,9 +79,9 @@ export const getPreprocessors = async (config) => {
   // Retrieve the preprocessor functions
   const preprocessors = [];
   for (const preprocessorPath of preprocessorPaths) {
-    const pattern = path.join(config.assetsDir, preprocessorPath);
-    const matches = (await glob(pattern, { posix: true })).sort();
-    for (const match of matches) {
+    const pattern = upath.join(config.assetsDir, preprocessorPath);
+    const matches = await glob(pattern, { nodir: true, posix: true });
+    for (const match of matches.sort()) {
       const { default: preprocessor } = await import(match);
       preprocessors.push(preprocessor);
     }
@@ -99,7 +100,7 @@ export const getRevealOptions = async (config, fromUrl = '/') => {
   if (!config.presentation.settings.menu.themes) {
     const themes = await getThemes(config, fromUrl);
     config.presentation.settings.menu.themes = themes.map((theme) => ({
-      name: toTitleCase(path.basename(theme.url)),
+      name: toTitleCase(upath.basename(theme.url)),
       theme: theme.url,
     }));
   }
@@ -171,24 +172,25 @@ export const getTemplateEngine = async (config, fromUrl = '/') => {
     return arg1 === arg2;
   });
   hbs.registerHelper('module', (name) => {
-    return path.relative(path.dirname(fromUrl), config.modules[name].url);
+    const url = upath.extname(fromUrl) ? upath.dirname(fromUrl) : fromUrl;
+    return upath.relative(url, config.modules[name].url);
   });
 
   // Register partials
   for (const partialPath of toArray(config.partialPaths)) {
-    const pattern = path.join(config.assetsDir, partialPath);
-    const matches = (await glob(pattern, { posix: true })).sort();
-    for (const match of matches) {
+    const pattern = upath.join(config.assetsDir, partialPath);
+    const matches = await glob(pattern, { nodir: true, posix: true });
+    for (const match of matches.sort()) {
       // Check if the target path is a file or a directory
       if (await isFile(match)) {
-        hbs.registerPartial(path.parse(match).name, await fs.readFile(match, 'utf-8'));
+        hbs.registerPartial(upath.parse(match).name, await fs.readFile(match, 'utf-8'));
       } else {
         const fileNames = await fs.readdir(match);
         for (const fileName of fileNames) {
           if (fileName.endsWith('.hbs')) {
             hbs.registerPartial(
-              path.parse(fileName).name,
-              await fs.readFile(path.join(match, fileName), 'utf-8'),
+              upath.parse(fileName).name,
+              await fs.readFile(upath.join(match, fileName), 'utf-8'),
             );
           }
         }
@@ -224,7 +226,8 @@ export const getTheme = async (config, fromUrl = '/') => {
   // Retrieve the theme URL
   const themes = await getThemes(config, fromUrl);
   const theme = themes.find(
-    (match) => path.basename(match.url).replace(path.extname(match.url), '') === presentation.theme,
+    (match) =>
+      upath.basename(match.url).replace(upath.extname(match.url), '') === presentation.theme,
   );
   return theme || { url: '/', path: null };
 };
@@ -238,7 +241,7 @@ export const getTheme = async (config, fromUrl = '/') => {
 export const getThemeOptions = async (config, fromUrl = '/') => {
   const themes = await getThemes(config, fromUrl);
   const themeOptions = themes.map((theme) => {
-    const name = path.basename(theme.url).replace(path.extname(theme.url), '');
+    const name = upath.basename(theme.url).replace(upath.extname(theme.url), '');
     const title = name.charAt(0).toUpperCase() + name.slice(1);
     return { name: title, theme: theme.url };
   });
@@ -288,13 +291,14 @@ export const renderCollection = async (url, filter = '') => {
   // Retrieve collection
   const config = await configuration();
   const targetUrl = url.slice(config.baseUrl.length);
-  const isCollection = await isDirectory(path.join(config.rootDir, targetUrl));
+  const targetPath = sanitize(targetUrl);
+  const isCollection = await isDirectory(upath.join(config.rootDir, targetPath));
   if (!isCollection) throw new Error(`Collection not found: ${url}`);
 
   // Retrieve configuration
   const engine = await getTemplateEngine(config, url);
   const theme = await getTheme(config, url);
-  const searchDir = path.join(config.rootDir, targetUrl);
+  const searchDir = upath.join(config.rootDir, targetPath);
   const presentations = await searchFiles(filter, {
     cwd: searchDir,
     exts: toArray(config.extensions),
@@ -305,21 +309,21 @@ export const renderCollection = async (url, filter = '') => {
     project: config.project,
     hasFavicon: config.hasFavicon,
     breadcrumb: targetUrl,
-    title: toTitleCase(path.basename(url)),
+    title: toTitleCase(upath.basename(url)),
     content: presentations.map((presentation) => {
-      const name = path.basename(presentation, path.extname(presentation));
-      const title = path.basename(presentation);
-      const endpoint = path.join('/', path.dirname(presentation));
-      const endpointUrl = path.dirname(presentation);
+      const name = upath.basename(presentation, upath.extname(presentation));
+      const title = upath.basename(presentation);
+      const endpoint = upath.join('/', upath.dirname(presentation));
+      const endpointUrl = upath.dirname(presentation);
       const item = config.build ? name : title;
-      const itemUrl = path.join(endpointUrl, config.build ? name + '.html' : title);
+      const itemUrl = upath.join(endpointUrl, config.build ? name + '.html' : title);
       return { name, title, endpoint, endpointUrl, item, itemUrl };
     }),
     themeUrl: theme.url,
   };
 
   // Compile template
-  const templatePath = path.join(config.packageDir, 'templates/collection.hbs');
+  const templatePath = upath.join(config.packageDir, 'templates/collection.hbs');
   const template = await fs.readFile(templatePath, 'utf-8');
   const markup = engine.compile(template.toString())(options);
 
@@ -334,15 +338,16 @@ export const renderCollection = async (url, filter = '') => {
  */
 export const renderDocument = async (url) => {
   // Retrieve url properties
-  const endpoint = path.dirname(url);
-  const extension = path.extname(url);
-  const name = path.basename(url, extension);
+  const endpoint = upath.dirname(url);
+  const extension = upath.extname(url);
+  const name = upath.basename(url, extension);
   const title = toTitleCase(name);
 
   // Retrieve presentation document
   let config = await configuration();
   const targetUrl = url.slice(config.baseUrl.length);
-  const content = await fs.readFile(path.join(config.rootDir, targetUrl), 'utf-8').catch(() => {
+  const targetPath = sanitize(targetUrl);
+  const content = await fs.readFile(upath.join(config.rootDir, targetPath), 'utf-8').catch(() => {
     throw new Error(`Document not found: ${url}`);
   });
   const presentation = parseDocument(content);
@@ -366,7 +371,7 @@ export const renderDocument = async (url) => {
     date: config.presentation.date,
     author: config.presentation.author,
     content: presentation.content,
-    gitUrl: config.git ? `${config.git}/${targetUrl}` : '',
+    gitUrl: config.git ? `${config.git}${targetUrl}` : '',
     themeUrl: theme.url,
     highlightThemeUrl: highlightTheme.url,
     scriptUrls: scripts.map((script) => script.url),
@@ -394,19 +399,22 @@ export const renderDocument = async (url) => {
       if (isAbsoluteUrl(sub)) {
         // Handle absolute hyperlinks
         return match;
+      } else if (sub.startsWith('#')) {
+        // Handle anchor hyperlinks
+        return match;
       } else if (sub.startsWith('@/')) {
         // Handle assets hyperlinks
         const assets = config.modules['assets'];
         const hyperlink = {
-          url: path.relative(path.dirname(url), path.join(assets.url, sub.slice(2))),
-          path: path.join(assets.path, sub.slice(2)),
+          url: upath.relative(upath.dirname(url), upath.join(assets.url, sub.slice(2))),
+          path: upath.join(assets.path, sub.slice(2)),
         };
         return match.replace(sub, hyperlink.url);
       } else {
         // Handle relative hyperlinks
         const hyperlink = {
-          url: path.relative(path.dirname(url), path.join(endpoint, sub)),
-          path: path.join(config.rootDir, path.dirname(targetUrl), sub),
+          url: upath.relative(upath.dirname(url), upath.join(endpoint, sub)),
+          path: upath.join(config.rootDir, upath.dirname(targetPath), sub),
         };
         hyperlinks.push(hyperlink);
         return match;
@@ -444,7 +452,7 @@ export const renderError = async (title, description = '', content = '') => {
   };
 
   // Compile template
-  const templatePath = path.join(config.packageDir, 'templates/error.hbs');
+  const templatePath = upath.join(config.packageDir, 'templates/error.hbs');
   const template = await fs.readFile(templatePath, 'utf-8');
   const markup = engine.compile(template.toString())(options);
 

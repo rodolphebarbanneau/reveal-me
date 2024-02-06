@@ -1,4 +1,4 @@
-import path from 'node:path';
+import upath from 'upath';
 
 import * as config from '../src/config';
 
@@ -7,7 +7,7 @@ describe('getPath function tests', () => {
     const basePath = '/base/path';
     const targetPath = 'file.txt';
     const result = config.getPath(targetPath, basePath);
-    expect(result).toBe('/base/path/file.txt');
+    expect(result).toBe(upath.resolve('/base/path/file.txt'));
   });
 
   test('should resolve tilde paths using package path', () => {
@@ -15,20 +15,20 @@ describe('getPath function tests', () => {
     const targetPath = '~file.txt';
     const packagePath = '/package';
     const result = config.getPath(targetPath, basePath, packagePath);
-    expect(result).toBe('/package/file.txt');
+    expect(result).toBe(upath.resolve('/package/file.txt'));
   });
 
   test('should use base path as default when package path is not provided', () => {
     const basePath = '/base/path';
     const targetPath = 'file.txt';
     const result = config.getPath(targetPath, basePath);
-    expect(result).toBe('/base/path/file.txt');
+    expect(result).toBe(upath.resolve('/base/path/file.txt'));
   });
 
   test('should use current working directory as default for base path and package path', () => {
     const targetPath = 'file.txt';
     const result = config.getPath(targetPath);
-    expect(result).toBe(path.resolve(process.cwd(), 'file.txt'));
+    expect(result).toBe(upath.resolve(process.cwd(), 'file.txt'));
   });
 });
 
@@ -38,6 +38,10 @@ describe('getPaths function tests', () => {
     const targetPaths = ['file1.txt', 'file2.txt', '~file3.txt'];
     const packagePath = '/package';
     const result = config.getPaths(targetPaths, basePath, packagePath);
-    expect(result).toEqual(['/base/path/file1.txt', '/base/path/file2.txt', '/package/file3.txt']);
+    expect(result).toEqual([
+      upath.resolve('/base/path/file1.txt'),
+      upath.resolve('/base/path/file2.txt'),
+      upath.resolve('/package/file3.txt'),
+    ]);
   });
 });

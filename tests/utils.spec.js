@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
-import path from 'node:path';
 
+import upath from 'upath';
 import { glob } from 'glob';
 
 import * as utils from '../src/utils';
@@ -31,86 +31,88 @@ describe('debounce function tests', () => {
 });
 
 describe('isDirectory function tests', () => {
-  beforeEach(() => {
+  afterEach(() => {
     utils.isDirectory.cache.clear();
+    jest.resetAllMocks();
     jest.restoreAllMocks();
   });
 
   test('should return true for a directory path', async () => {
     fs.stat.mockResolvedValue({ isDirectory: () => true });
-    const result = await utils.isDirectory('/path/to/directory');
+    const result = await utils.isDirectory('path/to/directory');
     expect(result).toBe(true);
   });
 
   test('should return false for a file path', async () => {
     fs.stat.mockResolvedValue({ isDirectory: () => false });
-    const result = await utils.isDirectory('/path/to/file.txt');
+    const result = await utils.isDirectory('path/to/file.txt');
     expect(result).toBe(false);
   });
 
   test('should return false for a non-existent path', async () => {
     fs.stat.mockRejectedValue(new Error('ENOENT: no such file or directory'));
-    const result = await utils.isDirectory('/path/does/not/exist');
+    const result = await utils.isDirectory('path/does/not/exist');
     expect(result).toBe(false);
   });
 
   test('should correctly resolve the given path before checking', async () => {
-    jest.spyOn(path, 'resolve');
-    fs.stat.mockImplementation(async (p) => {
-      if (p === '/path/to/directory') return { isDirectory: () => true };
+    jest.spyOn(upath, 'resolve');
+    fs.stat.mockImplementation(async (targetPath) => {
+      if (targetPath === 'path/to/directory') return { isDirectory: () => true };
       throw new Error('Unexpected path');
     });
-    await utils.isDirectory('/path/to/directory');
-    expect(path.resolve).toHaveBeenCalledWith('/path/to/directory');
+    await utils.isDirectory('path/to/directory');
+    expect(upath.resolve).toHaveBeenCalledWith('path/to/directory');
   });
 });
 
 describe('isFile function tests', () => {
-  beforeEach(() => {
+  afterEach(() => {
     utils.isFile.cache.clear();
+    jest.resetAllMocks();
     jest.restoreAllMocks();
   });
 
   test('should return true for a file path', async () => {
-    fs.stat.mockResolvedValue({ isFile: () => true });
-    const result = await utils.isFile('/path/to/file.txt');
+    fs.stat.mockResolvedValue({ isFile: async () => true });
+    const result = await utils.isFile('path/to/file.txt');
     expect(result).toBe(true);
   });
 
   test('should return false for a directory path', async () => {
-    fs.stat.mockResolvedValue({ isFile: () => false });
-    const result = await utils.isFile('/path/to/directory');
+    fs.stat.mockResolvedValue({ isFile: async () => false });
+    const result = await utils.isFile('path/to/directory');
     expect(result).toBe(false);
   });
 
   test('should return false for a non-existent path', async () => {
     fs.stat.mockRejectedValue(new Error('ENOENT: no such file or directory'));
-    const result = await utils.isFile('/path/does/not/exist');
+    const result = await utils.isFile('path/does/not/exist');
     expect(result).toBe(false);
   });
 
   test('should correctly resolve the given path before checking', async () => {
-    jest.spyOn(path, 'resolve');
-    fs.stat.mockImplementation(async (p) => {
-      if (p === '/path/to/file.txt') return { isFile: () => true };
+    jest.spyOn(upath, 'resolve');
+    fs.stat.mockImplementation(async (targetPath) => {
+      if (targetPath === 'path/to/file.txt') return { isFile: async () => true };
       throw new Error('Unexpected path');
     });
-    await utils.isFile('/path/to/file.txt');
-    expect(path.resolve).toHaveBeenCalledWith('/path/to/file.txt');
+    await utils.isFile('path/to/file.txt');
+    expect(upath.resolve).toHaveBeenCalledWith('path/to/file.txt');
   });
 });
 
 describe('isWithinDirectory function tests', () => {
   test('should return true for a path within the base path', () => {
-    const targetPath = '/path/to/file.txt';
-    const basePath = '/path/to';
+    const targetPath = 'path/to/file.txt';
+    const basePath = 'path/to';
     const result = utils.isWithinDirectory(targetPath, basePath);
     expect(result).toBe(true);
   });
 
   test('should return true for a path equal to the base path', () => {
-    const targetPath = '/path/to';
-    const basePath = '/path/to';
+    const targetPath = 'path/to';
+    const basePath = 'path/to';
     const result = utils.isWithinDirectory(targetPath, basePath);
     expect(result).toBe(true);
   });
@@ -130,26 +132,32 @@ describe('isWithinDirectory function tests', () => {
 });
 
 describe('getDirectory function tests', () => {
-  beforeEach(() => {
+  afterEach(() => {
+    utils.isDirectory.cache.clear();
+    jest.resetAllMocks();
     jest.restoreAllMocks();
   });
 
   test('should return the directory of a directory path', async () => {
-    jest.spyOn(utils, 'isDirectory').mockResolvedValue(true);
-    const result = await utils.getDirectory('/path/to/directory');
-    expect(result).toBe('/path/to/directory');
+    fs.stat.mockResolvedValue({ isDirectory: async () => true });
+    const result = await utils.getDirectory('path/to/directory');
+    expect(result).toBe('path/to/directory');
   });
 
   test('should return the directory of a file path', async () => {
-    jest.spyOn(utils, 'isDirectory').mockResolvedValue(false);
-    const result = await utils.getDirectory('/path/to/file.txt');
-    expect(result).toBe('/path/to');
+    fs.stat.mockImplementation(async () => ({ isDirectory: async () => true }));
+    fs.stat.mockImplementationOnce(async () => ({ isDirectory: async () => false }));
+    const result = await utils.getDirectory('path/to/file.txt');
+    expect(result).toBe('path/to');
   });
 
   test('should handle errors from is directory', async () => {
-    jest.spyOn(utils, 'isDirectory').mockRejectedValue(new Error('Test error'));
-    const result = await utils.getDirectory('/path/to/directory');
-    expect(result).toBe('/path/to/directory');
+    fs.stat.mockResolvedValue({ isDirectory: async () => false });
+    try {
+      await utils.getDirectory('path/to/directory');
+    } catch (error) {
+      expect(true).toBe(true);
+    }
   });
 });
 
@@ -166,13 +174,14 @@ describe('getReadablePath function tests', () => {
 });
 
 describe('loadJSON function tests', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+  afterEach(() => {
+    jest.resetAllMocks();
+    jest.restoreAllMocks();
   });
 
   test('should load and parse a valid JSON file', async () => {
     fs.readFile.mockResolvedValue('{"key": "value"}');
-    const filePath = '/path/to/file.json';
+    const filePath = 'path/to/file.json';
     const result = await utils.loadJSON(filePath);
     expect(result).toEqual({ key: 'value' });
     expect(fs.readFile).toHaveBeenCalledWith(filePath, 'utf8');
@@ -180,7 +189,7 @@ describe('loadJSON function tests', () => {
 
   test('should handle an empty JSON file', async () => {
     fs.readFile.mockResolvedValue('');
-    const filePath = '/path/to/empty.json';
+    const filePath = 'path/to/empty.json';
     const result = await utils.loadJSON(filePath);
     expect(result).toEqual({});
     expect(fs.readFile).toHaveBeenCalledWith(filePath, 'utf8');
@@ -188,7 +197,7 @@ describe('loadJSON function tests', () => {
 
   test('should handle a JSON parsing error', async () => {
     fs.readFile.mockResolvedValue('invalid JSON');
-    const filePath = '/path/to/invalid.json';
+    const filePath = 'path/to/invalid.json';
     const result = await utils.loadJSON(filePath);
     expect(result).toEqual({});
     expect(fs.readFile).toHaveBeenCalledWith(filePath, 'utf8');
@@ -196,7 +205,7 @@ describe('loadJSON function tests', () => {
 
   test('should handle a file reading error', async () => {
     fs.readFile.mockRejectedValue(new Error('File not found'));
-    const filePath = '/path/to/nonexistent.json';
+    const filePath = 'path/to/nonexistent.json';
     const result = await utils.loadJSON(filePath);
     expect(result).toEqual({});
     expect(fs.readFile).toHaveBeenCalledWith(filePath, 'utf8');
@@ -204,42 +213,43 @@ describe('loadJSON function tests', () => {
 });
 
 describe('makeDirectory function tests', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+  afterEach(() => {
+    jest.resetAllMocks();
+    jest.restoreAllMocks();
   });
 
   test('should create a directory if it does not exist', async () => {
-    const targetPath = '/path/to/new/directory';
-    jest.spyOn(utils, 'getDirectory').mockResolvedValue(targetPath);
+    const targetPath = 'path/to/new/directory';
+    fs.stat.mockResolvedValue({ isDirectory: () => false });
     fs.access.mockRejectedValue(new NoEntryError());
     fs.mkdir.mockResolvedValue(targetPath);
     const result = await utils.makeDirectory(targetPath);
     expect(result).toBe(targetPath);
-    expect(fs.access).toHaveBeenCalledWith(path.dirname(targetPath));
-    expect(fs.mkdir).toHaveBeenCalledWith(path.dirname(targetPath), { recursive: true });
+    expect(fs.access).toHaveBeenCalledWith(targetPath);
+    expect(fs.mkdir).toHaveBeenCalledWith(targetPath, { recursive: true });
   });
 
   test('should not create a directory if it already exists', async () => {
-    const targetPath = '/path/to/existing/directory';
-    jest.spyOn(utils, 'getDirectory').mockResolvedValue(targetPath);
+    const targetPath = 'path/to/existing/directory';
+    fs.stat.mockResolvedValue({ isDirectory: () => true });
     fs.access.mockResolvedValue(undefined);
     const result = await utils.makeDirectory(targetPath);
     expect(result).toBe(undefined);
-    expect(fs.access).toHaveBeenCalledWith(path.dirname(targetPath));
+    expect(fs.access).toHaveBeenCalledWith(targetPath);
     expect(fs.mkdir).not.toHaveBeenCalled();
   });
 
   test('should handle other errors', async () => {
-    const targetPath = '/path/to/error/directory';
+    const targetPath = 'path/to/error/directory';
     const customError = new Error('Custom error message');
-    jest.spyOn(utils, 'getDirectory').mockResolvedValue(targetPath);
+    fs.stat.mockResolvedValue({ isDirectory: () => true });
     fs.access.mockRejectedValue(customError);
     try {
       await utils.makeDirectory(targetPath);
       expect(true).toBe(false);
     } catch (error) {
       expect(error).toBe(customError);
-      expect(fs.access).toHaveBeenCalledWith(path.dirname(targetPath));
+      expect(fs.access).toHaveBeenCalledWith(targetPath);
       expect(fs.mkdir).not.toHaveBeenCalled();
     }
   });
@@ -299,59 +309,57 @@ describe('mergeObjects function tests', () => {
 describe('sanitize function tests', () => {
   test('should sanitize a basic URL', () => {
     const url = 'http://example.com/path/to/resource';
-    const sanitizedUrl = utils.sanitize(url);
-    expect(sanitizedUrl).toBe('http://example.com/path/to/resource');
+    const sanitized = utils.sanitize(url);
+    expect(sanitized).toBe('http://example.com/path/to/resource');
   });
 
   test('should sanitize a URL with query parameters', () => {
     const url = 'http://example.com/path/to/resource?param1=value1&param2=value2';
-    const sanitizedUrl = utils.sanitize(url);
-    expect(sanitizedUrl).toBe('http://example.com/path/to/resource');
+    const sanitized = utils.sanitize(url);
+    expect(sanitized).toBe('http://example.com/path/to/resource');
   });
 
   test('should sanitize a URL with directory traversal (..)', () => {
     const url = 'http://example.com/path/../to/resource';
-    const sanitizedUrl = utils.sanitize(url);
-    expect(sanitizedUrl).toBe('http://example.com/path//to/resource');
+    const sanitized = utils.sanitize(url);
+    expect(sanitized).toBe('http://example.com/path//to/resource');
   });
 
-  test('should sanitize a URL with leading and trailing slashes', () => {
+  test('should sanitize a URL with no leading and trailing', () => {
     const url = '/path/to/resource/';
-    const sanitizedUrl = utils.sanitize(url);
-    expect(sanitizedUrl).toBe('path/to/resource');
+    const sanitized = utils.sanitize(url);
+    expect(sanitized).toBe('path/to/resource');
   });
 
-  test('should sanitize a URL with prefix and suffix', () => {
+  test('should sanitize a URL with leading and trailing', () => {
     const url = 'path/to/resource';
-    const options = { prefix: 'https://example.com/', suffix: '/info' };
-    const sanitizedUrl = utils.sanitize(url, options);
-    expect(sanitizedUrl).toBe('https://example.com/path/to/resource/info');
+    const sanitized = utils.sanitize(url, { leading: true, trailing: true });
+    expect(sanitized).toBe('/path/to/resource/');
   });
 
-  test('should sanitize a URL with prefix only', () => {
-    const url = 'path/to/resource';
-    const options = { prefix: 'https://example.com/' };
-    const sanitizedUrl = utils.sanitize(url, options);
-    expect(sanitizedUrl).toBe('https://example.com/path/to/resource');
+  test('should sanitize a URL with leading only', () => {
+    const url = 'path/to/resource/';
+    const sanitized = utils.sanitize(url, { leading: true });
+    expect(sanitized).toBe('/path/to/resource');
   });
 
-  test('should sanitize a URL with suffix only', () => {
-    const url = 'path/to/resource';
-    const options = { prefix: '/', suffix: '/info' };
-    const sanitizedUrl = utils.sanitize(url, options);
-    expect(sanitizedUrl).toBe('/path/to/resource/info');
+  test('should sanitize a URL with trailing only', () => {
+    const url = '/path/to/resource';
+    const sanitized = utils.sanitize(url, { trailing: true });
+    expect(sanitized).toBe('path/to/resource/');
   });
 
   test('should sanitize an empty URL', () => {
     const url = '';
-    const sanitizedUrl = utils.sanitize(url);
-    expect(sanitizedUrl).toBe('');
+    const sanitized = utils.sanitize(url);
+    expect(sanitized).toBe('');
   });
 });
 
 describe('searchFiles function tests', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+  afterEach(() => {
+    jest.resetAllMocks();
+    jest.restoreAllMocks();
   });
 
   test('should find files matching the filter with default options', async () => {

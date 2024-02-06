@@ -1,11 +1,12 @@
 import fs from 'node:fs/promises';
-import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import upath from 'upath';
 
 import { isDirectory, toTitleCase } from './utils.js';
 
 // Retrieve package directory
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = upath.dirname(fileURLToPath(import.meta.url));
 
 /**
  * Copies a file or directory recursively to a specified destination.
@@ -13,31 +14,26 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  * @param {string} dest - The destination path.
  */
 export const copyRecursively = async (src, dest) => {
-  try {
-    // Check if source path exists
-    const exists = await fs
-      .stat(src)
-      .then(() => true)
-      .catch(() => false);
-    if (!exists) {
-      console.error(`Source path "${src}" does not exist.`);
-      return;
-    }
+  // Check if source path exists
+  const exists = await fs
+    .stat(src)
+    .then(() => true)
+    .catch(() => false);
+  if (!exists) {
+    throw new Error(`Source path "${src}" does not exist.`);
+  }
 
-    // Copy file or directory
-    if (await isDirectory(src)) {
-      await fs.mkdir(dest, { recursive: true });
-      const children = await fs.readdir(src);
-      for (let childItemName of children) {
-        const srcPath = path.join(src, childItemName);
-        const destPath = path.join(dest, childItemName);
-        await copyRecursively(srcPath, destPath);
-      }
-    } else {
-      await fs.copyFile(src, dest);
+  // Copy file or directory
+  if (await isDirectory(src)) {
+    await fs.mkdir(dest, { recursive: true });
+    const children = await fs.readdir(src);
+    for (let childItemName of children) {
+      const srcPath = upath.join(src, childItemName);
+      const destPath = upath.join(dest, childItemName);
+      await copyRecursively(srcPath, destPath);
     }
-  } catch (error) {
-    console.error(`Error copying files: ${error}`);
+  } else {
+    await fs.copyFile(src, dest);
   }
 };
 
@@ -49,7 +45,7 @@ export const copyRecursively = async (src, dest) => {
 export default async (pkg, config) => {
   // Write config.json
   await fs.writeFile(
-    path.join(process.cwd(), 'config.json'),
+    upath.join(process.cwd(), 'config.json'),
     JSON.stringify(
       {
         project: toTitleCase(config.name),
@@ -68,7 +64,7 @@ export default async (pkg, config) => {
 
   // Write package.json
   await fs.writeFile(
-    path.join(process.cwd(), 'package.json'),
+    upath.join(process.cwd(), 'package.json'),
     JSON.stringify(
       {
         type: 'module',
@@ -95,12 +91,16 @@ export default async (pkg, config) => {
 
   // Write README.md
   await fs.writeFile(
-    path.join(process.cwd(), 'README.md'),
+    upath.join(process.cwd(), 'README.md'),
     `# ${toTitleCase(config.name)}\n\n${config.description}`,
   );
 
   // Copy demo project
-  await copyRecursively(path.join(__dirname, 'demo'), path.join(process.cwd(), ''));
+  try {
+    await copyRecursively(upath.join(__dirname, 'demo'), upath.join(process.cwd(), ''));
+  } catch (error) {
+    console.error(`😱 Error copying demo project:\n`, error);
+  }
 
-  console.log('Project initialized successfully.');
+  console.log('✅ Project initialized successfully.');
 };

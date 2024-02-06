@@ -59,6 +59,7 @@
     "jquery": "^3.7.1",
     "lodash": "^4.17.21",
     "mermaid": "^10.6.1",
+    "minimatch": "^9.0.3",
     "open": "^10.0.3",
     "reveal.js": "^5.0.2",
     "reveal.js-menu": "^2.1.0",

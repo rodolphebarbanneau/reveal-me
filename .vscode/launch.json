@@ -12,7 +12,7 @@
       "program": "${workspaceFolder}/bin/main.js",
       "args": [
         "--build",
-        "--print",
+        "--print"
       ],
       "console": "integratedTerminal",
       "skipFiles": [

@@ -1,8 +1,6 @@
-/* eslint-disable no-console */
-import path from 'node:path';
-
 import _ from 'lodash';
 import createDebug from 'debug';
+import upath from 'upath';
 
 import configuration from './config.js';
 import { makeDirectory, sanitize } from './utils.js';
@@ -17,9 +15,10 @@ const debug = createDebug('reveal-me');
 // Import puppeteer dynamically to avoid bundling it in the final binary
 const puppeteerImport = (async () => {
   try {
+    //@ts-ignore
     return await import('puppeteer');
   } catch (error) {
-    console.warn('Unable to print file (Puppeteer unavailable)');
+    console.warn('⚠️ Unable to print file (Puppeteer unavailable)');
     debug(error);
   }
 })();
@@ -87,17 +86,17 @@ export const print = async (url, slide) => {
   const config = await configuration();
   const puppeteerOptions = getPuppeteerOptions(config);
   const printFormat = slide ? '.jpg' : '.pdf';
-  const printUrl = sanitize(slide, { prefix: '/' });
+  const printUrl = sanitize(url, { leading: true });
   const slideUrl = slide ? getSlideUrl(slide) : '';
-  const printModule = path.join(config.modules['base'].path, 'plugin/print-pdf/print-pdf.js');
+  const printModule = upath.join(config.modules['base'].path, 'plugin/print-pdf/print-pdf.js');
   const printPath =
     typeof config.print === 'string'
-      ? path.resolve(config.print)
+      ? upath.resolve(config.print)
       : (() => {
           const printPath = printUrl.replace(/\.[^.]*$/, printFormat);
           return slide
-            ? path.join(config.outDir, printPath)
-            : path.join(config.outDir, 'pdf', printPath.slice(config.baseUrl.length));
+            ? upath.join(config.outDir, printPath)
+            : upath.join(config.outDir, 'pdf', printPath.slice(config.baseUrl.length));
         })();
   const printOptions = {
     path: printPath,
@@ -108,7 +107,7 @@ export const print = async (url, slide) => {
 
   // Log
   debug({ printUrl, slideUrl, printPath, printModule, puppeteerOptions });
-  console.log(`Printing ":/${printUrl}" to "${printPath}"...`);
+  console.log(`👉 Printing ":/${printUrl}" to "${printPath}"...`);
 
   // Print
   try {
@@ -127,11 +126,11 @@ export const print = async (url, slide) => {
     }
     await browser.close();
   } catch (error) {
-    console.error(`Error printing ":/${printUrl}" to "${printPath}":\n`, error);
+    console.error(`😱 Error printing ":/${printUrl}" to "${printPath}":\n`, error);
     debug(error);
   }
 
-  console.log(`Successfully printed ":/${printUrl}" to "${printPath}"`);
+  console.log(`✅ Successfully printed ":/${printUrl}" to "${printPath}"`);
   return printPath;
 };
 
@@ -149,7 +148,8 @@ export default async (urls, slide) => {
   // Print
   const operations = [];
   for (const url of _.uniq(urls)) {
-    operations.push(print(url, slide));
+    // Await to avoid overloading the system
+    operations.push(await print(url, slide));
   }
-  return Promise.all(operations);
+  return operations;
 };

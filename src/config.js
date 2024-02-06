@@ -1,12 +1,11 @@
-import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
 import _ from 'lodash';
+import upath from 'upath';
 import yargsParser from 'yargs-parser';
 
 import {
-  getDirectory,
   isDirectory,
   isFile,
   isWithinDirectory,
@@ -23,7 +22,7 @@ import {
  */
 
 // Retrieve package directory
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = upath.dirname(fileURLToPath(import.meta.url));
 
 // CLI options
 export const CLI_OPTIONS = {
@@ -43,14 +42,14 @@ export const CLI_OPTIONS = {
 
 // Retrieve modules configuration
 const require = createRequire(import.meta.url);
-const revealPath = path.join(require.resolve('reveal.js'), '..', '..', '/');
-const bootstrapPath = path.join(require.resolve('bootstrap'), '..', '..');
-const datatablesPath = path.join(require.resolve('datatables.net'), '..', '..', '/');
-const datatablesBsPath = path.join(require.resolve('datatables.net-bs5'), '..', '..', '/');
-const fontAwesomePath = path.join(require.resolve('font-awesome/package.json'), '..');
-const highlightPath = path.join(require.resolve('highlight.js'), '..', '..', 'styles');
-const jqueryPath = path.join(require.resolve('jquery'), '..');
-const menuPath = path.join(require.resolve('reveal.js-menu/menu.js'), '..');
+const revealPath = upath.join(require.resolve('reveal.js'), '..', '..', '/');
+const bootstrapPath = upath.join(require.resolve('bootstrap'), '..', '..');
+const datatablesPath = upath.join(require.resolve('datatables.net'), '..', '..', '/');
+const datatablesBsPath = upath.join(require.resolve('datatables.net-bs5'), '..', '..', '/');
+const fontAwesomePath = upath.join(require.resolve('font-awesome/package.json'), '..');
+const highlightPath = upath.join(require.resolve('highlight.js'), '..', '..', 'styles');
+const jqueryPath = upath.join(require.resolve('jquery'), '..');
+const menuPath = upath.join(require.resolve('reveal.js-menu/menu.js'), '..');
 
 /** @type {Record<string, ModuleConfig>} */
 const MODULES = {
@@ -68,29 +67,46 @@ const MODULES = {
 };
 
 /**
+ * Gets the directory of the given target path.
+ * @param {string} targetPath - The target path to process.
+ * @returns {Promise<string>} - The directory of the target path.
+ */
+export const getDir = async (targetPath) => {
+  // Define glob patterns that indicate the start of a pattern
+  const patterns = ['*', '?', '[', ']'];
+
+  // Find the first segment of the path that contains a glob pattern
+  const segments = targetPath.split(/\/|\\/);
+  let index = segments.length;
+  for (let i = 0; i < segments.length; i++) {
+    if (patterns.some((pattern) => segments[i].includes(pattern))) {
+      index = i;
+      break;
+    }
+  }
+
+  // Build the base path up to the segment before the glob pattern starts
+  const base = segments.slice(0, index).join('/') || '/';
+  // Retrieve the directory of the base path
+  const dir = upath.extname(base) ? upath.dirname(base) : base;
+  if (!(await isDirectory(dir))) {
+    throw new Error('The target directory must be a valid directory');
+  }
+  return dir;
+};
+
+/**
  * Gets the absolute path of the given target path relative to the given base path and package path.
  * The package path is used to resolve tilde paths.
  * @param {string} targetPath - The target path to process.
  * @param {string} [basePath] - The optional base path (defaults to the current working directory).
  * @param {string} [packagePath] - The optional package path (defaults to the base path).
- * @returns {string} - The absolute path.
+ * @returns {Promise<string>} - The absolute path.
  */
-export const getPath = (targetPath, basePath, packagePath) => {
+export const getPath = async (targetPath, basePath, packagePath) => {
   return targetPath.startsWith('~')
-    ? path.resolve(packagePath || basePath || process.cwd(), targetPath.slice(1))
-    : path.resolve(basePath || process.cwd(), targetPath);
-};
-
-/**
- * Gets the absolute paths of the given target paths relative to the given base path and package
- * path. The package path is used to resolve tilde paths.
- * @param {string[]} targetPaths - The target paths to process.
- * @param {string} [basePath] - The optional base path (defaults to the current working directory).
- * @param {string} [packagePath] - The optional package path (defaults to the base path).
- * @returns {string[]} - The absolute paths.
- */
-export const getPaths = (targetPaths, basePath, packagePath) => {
-  return targetPaths.map((targetPath) => getPath(targetPath, basePath, packagePath));
+    ? upath.resolve(packagePath || basePath || process.cwd(), targetPath.slice(1))
+    : upath.resolve(basePath || process.cwd(), targetPath);
 };
 
 /**
@@ -111,15 +127,15 @@ export default _.memoize(async (presentationConfig = {}) => {
   switch (cli_.length) {
     case 0:
     case 1:
-      targetPath = getPath(cli_[0].toString(), process.cwd(), __dirname);
-      targetDir = await getDirectory(targetPath);
+      targetPath = await getPath(cli_[0].toString(), process.cwd(), __dirname);
+      targetDir = await getDir(targetPath);
       break;
     case 2:
-      targetDir = getPath(cli_[0].toString(), process.cwd(), __dirname);
+      targetDir = await getPath(cli_[0].toString(), process.cwd(), __dirname);
       if (!isDirectory(targetDir)) {
         throw new Error('The target directory must be a directory');
       }
-      targetPath = path.resolve(targetDir, cli_[1].toString());
+      targetPath = upath.resolve(targetDir, cli_[1].toString());
       if (!isWithinDirectory(targetPath, targetDir)) {
         throw new Error('The target path must be within the target directory');
       }
@@ -130,9 +146,9 @@ export default _.memoize(async (presentationConfig = {}) => {
 
   // Retrieve project configuration
   const extraConfig = { presentation: presentationConfig };
-  const defaultConfig = await loadJSON(path.join(__dirname, 'defaults.json'));
+  const defaultConfig = await loadJSON(upath.join(__dirname, 'defaults.json'));
   const processConfig = await loadJSON(
-    path.join(targetDir, cliConfig.config || defaultConfig.config),
+    upath.join(targetDir, cliConfig.config || defaultConfig.config),
   );
 
   // Merge configurations
@@ -142,19 +158,19 @@ export default _.memoize(async (presentationConfig = {}) => {
   });
 
   // Update configuration template
-  config.templatePath = getPath(config.templatePath, targetDir, __dirname);
+  config.templatePath = await getPath(config.templatePath, targetDir, __dirname);
   // Update configuration urls
-  config.baseUrl = sanitize(config.baseUrl, { prefix: '/' });
+  config.baseUrl = sanitize(config.baseUrl, { leading: true });
   Object.values(config.modules).forEach(
-    (value) => (value.url = sanitize(value.url, { prefix: '/' })),
+    (value) => (value.url = sanitize(value.url, { leading: true })),
   );
   // Update configuration paths
   config.packageDir = __dirname;
   config.targetDir = targetDir;
   config.targetPath = targetPath;
-  config.outDir = path.join(targetDir, config.outDir);
-  config.rootDir = path.join(targetDir, config.rootDir);
-  config.assetsDir = path.join(targetDir, config.assetsDir);
+  config.outDir = upath.join(targetDir, config.outDir);
+  config.rootDir = upath.join(targetDir, config.rootDir);
+  config.assetsDir = upath.join(targetDir, config.assetsDir);
   // Update configuration modules
   config.modules['assets'].path = config.assetsDir;
   // Update configuration sources
@@ -165,7 +181,7 @@ export default _.memoize(async (presentationConfig = {}) => {
     defaults: defaultConfig,
   };
   // Update configuration favicon
-  config.hasFavicon = await isFile(path.join(config.assetsDir, 'favicon.ico'));
+  config.hasFavicon = await isFile(upath.join(config.assetsDir, 'favicon.ico'));
 
   return config;
 });

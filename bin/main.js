@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 import fs from 'node:fs/promises';
-import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import autocompletePrompt from 'inquirer-autocomplete-prompt';
 import inquirer from 'inquirer';
 import open from 'open';
+import upath from 'upath';
 import updater from 'update-notifier';
 import yargsParser from 'yargs-parser';
 
@@ -15,17 +15,17 @@ import configuration, { CLI_OPTIONS } from '../src/config.js';
 import init from '../src/init.js';
 import print from '../src/print.js';
 import startServer from '../src/server.js';
-import { isDirectory, isFile, loadJSON, sanitize, searchFiles, toArray } from '../src/utils.js';
+import { isDirectory, isFile, loadJSON, searchFiles, toArray } from '../src/utils.js';
 
 /**
  * @typedef {import('../src/types').Config} Config
  */
 
 // Retrieve package directory
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = upath.dirname(fileURLToPath(import.meta.url));
 
 // Retrieve package
-const pkg = await loadJSON(path.join(__dirname, '../package.json'));
+const pkg = await loadJSON(upath.join(__dirname, '..', 'package.json'));
 updater({ pkg }).notify();
 
 // Retrieve command line arguments
@@ -41,7 +41,7 @@ inquirer.registerPrompt('autocomplete', autocompletePrompt);
 const promptForInit = async () => {
   return inquirer.prompt([
     { name: 'private', message: 'private:', default: true },
-    { name: 'name', message: 'package name:', default: path.basename(process.cwd()) },
+    { name: 'name', message: 'package name:', default: upath.basename(process.cwd()) },
     { name: 'version', message: 'version:', default: '1.0.0' },
     { name: 'license', message: 'license:' },
     { name: 'description', message: 'description:' },
@@ -50,7 +50,7 @@ const promptForInit = async () => {
     {
       type: 'confirm',
       name: 'confirm',
-      message: 'Proceed with initialization in current directory? (y/N)',
+      message: 'Proceed with initialization in current directory?',
       default: false,
     },
   ]);
@@ -67,9 +67,10 @@ const promptForAction = async () => {
       name: 'target',
       message: 'Select an option:',
       choices: [
-        { name: 'Load active directory', value: '.' },
-        { name: 'Load examples', value: '~examples' },
-        { name: 'Exit (^C)', value: null },
+        { name: 'Load active directory', value: 'directory' },
+        { name: 'Load examples', value: 'examples' },
+        { name: 'Show help', value: 'help' },
+        { name: 'Exit (^C)', value: 'exit' },
       ],
     },
   ]);
@@ -109,7 +110,7 @@ const promptForPresentation = async (config) => {
     {
       type: 'confirm',
       name: 'select',
-      message: 'Select a specifc presentation? (y/N)',
+      message: 'Select a specifc presentation?',
       default: false,
     },
     {
@@ -122,7 +123,7 @@ const promptForPresentation = async (config) => {
     {
       type: 'confirm',
       name: 'confirm',
-      message: `Proceed with ${count} presentation(s)? (y/N)`,
+      message: `Proceed with ${count} presentation(s)?`,
       default: false,
       when: (answers) => !answers.select && (config.build || config.print),
     },
@@ -140,83 +141,106 @@ const promptForPresentation = async (config) => {
  *    operation is set (i.e. "build" and "print").
  * */
 (async () => {
+  // Retrieve help content
+  const help = await fs.readFile(upath.join(__dirname, 'help.txt'));
+  const hello = (mode) => {
+    console.log(`🤙 \x1b[1mreveal-me\x1b[0m ${pkg.version} [${mode}]`);
+  };
+
+  // Handle command line arguments
   if (argv.help) {
     // Print help
-    const help = await fs.readFile(path.join(__dirname, './help.txt'));
-    console.log(help.toString());
+    hello(help.toString());
+    process.exit(0);
   } else if (argv.version) {
     // Print version
     console.log(pkg.version);
+    process.exit(0);
   } else if (argv.init) {
     // Initialize a new project
+    hello('init');
     const project = await promptForInit();
     if (project.confirm) {
       await init(pkg, project);
     } else {
-      console.log('Operation aborted');
+      console.log('❌ Operation aborted');
     }
     process.exit(0);
   } else {
     // Serve presentations
-    const mode = [argv.build ? 'build' : '', argv.print ? 'print' : '']
-      .filter(Boolean)
-      .join('+')
-      .replace(/^$/, 'serve');
-    console.log(`\x1b[1mreveal-me\x1b[0m ${pkg.version} [${mode}]`);
+    hello(
+      [argv.build ? 'build' : '', argv.print ? 'print' : '']
+        .filter(Boolean)
+        .join('+')
+        .replace(/^$/, 'serve'),
+    );
 
     try {
       // Prompt for an action if target path is not provided
       const cli = yargsParser(process.argv.slice(2));
       if (cli['_'].length === 0) {
         const action = await promptForAction();
-        // Update command line arguments if a choice is made
-        if (!action.target) return;
-        process.argv.splice(2, 0, action.target);
+        // Handle action
+        switch (action.target) {
+          case 'directory':
+            process.argv.splice(2, 0, '.');
+            break;
+          case 'examples':
+            process.argv.splice(2, 0, '~examples');
+            break;
+          case 'help':
+            console.log(help.toString());
+            process.exit(0);
+            break;
+          case 'exit':
+          default:
+            process.exit(0);
+        }
       }
 
       // Retrieve configuration
       const config = await configuration();
 
       // Retrieve target presentations URLs
-      let targetUrl = sanitize(path.relative(config.rootDir, config.targetPath));
-      let targetUrls = [];
+      let presentation = upath.relative(config.rootDir, config.targetPath);
+      let presentations = [];
 
       if (config.targetPath.includes('*')) {
         // Handle wildcard target
-        targetUrls = await searchFiles(config.targetPath, {
+        presentations = await searchFiles(config.targetPath, {
           cwd: config.rootDir,
           exts: toArray(config.extensions),
         });
-        targetUrl = targetUrls.length ? targetUrls[0] : '';
+        presentation = presentations.length ? presentations[0] : '';
       } else if (await isDirectory(config.targetPath)) {
         // Handle directory target
         const answers = argv.all ? { confirm: true } : await promptForPresentation(config);
         if (answers.select ?? true) {
-          targetUrl = answers.selection;
-          targetUrls = [answers.selection];
+          presentation = answers.selection;
+          presentations = [answers.selection];
         } else if (answers.confirm ?? true) {
-          targetUrls = await searchFiles(`${targetUrl ? targetUrl : '*'}*/**`, {
+          presentations = await searchFiles(`${presentation ? presentation : '*'}*/**`, {
             cwd: config.rootDir,
             exts: toArray(config.extensions),
           });
         } else {
-          console.log('Operation aborted');
+          console.log('❌ Operation aborted');
           process.exit(0);
         }
       } else if (await isFile(config.targetPath)) {
         // Handle file target
-        targetUrls = [targetUrl];
+        presentations = [presentation];
       }
 
       // Check if target URLs were found
-      if (!targetUrls.length) {
-        console.error('No presentations found...');
+      if (!presentations.length) {
+        console.error('🔎 No presentations found...');
         process.exit(1);
       }
 
       // Retrieve presentation URLs
-      const url = path.join(config.baseUrl, targetUrl);
-      const urls = targetUrls.map((url) => path.join(config.baseUrl, url));
+      const url = upath.join(config.baseUrl, presentation);
+      const urls = presentations.map((url) => upath.join(config.baseUrl, url));
 
       // Start the server
       const server = await startServer();
@@ -232,13 +256,13 @@ const promptForPresentation = async (config) => {
       } else if (config.open) {
         open(`http://${config.host}:${config.port}${url}`);
         process.on('SIGINT', () => {
-          console.log('Shutting down server...');
+          console.log('👋 Shutting down server...');
           server.close();
           process.exit(0);
         });
       }
     } catch (error) {
-      console.error('Failed to serve presentations:\n', error);
+      console.error('😱 Failed to serve presentations:\n', error);
       process.exit(1);
     }
   }

@@ -1,4 +1,4 @@
-# `reveal-me`
+# 🤙 `reveal-me`
 
 ## Introduction
 

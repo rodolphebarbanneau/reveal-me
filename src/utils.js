@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
-import path from 'node:path';
 
 import _ from 'lodash';
+import upath from 'upath';
 import { glob } from 'glob';
 
 /**
@@ -29,7 +29,7 @@ export const debounce = (func, wait = 100) => {
  */
 export const isDirectory = _.memoize(async (targetPath) => {
   return fs
-    .stat(path.resolve(targetPath))
+    .stat(upath.resolve(targetPath))
     .then((stats) => stats.isDirectory())
     .catch(() => false);
 });
@@ -41,7 +41,7 @@ export const isDirectory = _.memoize(async (targetPath) => {
  */
 export const isFile = _.memoize(async (targetPath) => {
   return fs
-    .stat(path.resolve(targetPath))
+    .stat(upath.resolve(targetPath))
     .then((stats) => stats.isFile())
     .catch(() => false);
 });
@@ -53,18 +53,9 @@ export const isFile = _.memoize(async (targetPath) => {
  * @returns {boolean} - True if the target path is within the base path, false otherwise.
  */
 export const isWithinDirectory = (targetPath, basePath) => {
-  const checkBase = path.normalize(path.resolve(basePath || process.cwd()));
-  const checkFile = path.normalize(path.resolve(checkBase, targetPath));
+  const checkBase = upath.normalize(upath.resolve(basePath || process.cwd()));
+  const checkFile = upath.normalize(upath.resolve(checkBase, targetPath));
   return checkFile.startsWith(checkBase);
-};
-
-/**
- * Gets the directory of the given path.
- * @param {string} targetPath - The path to process.
- * @returns {Promise<string>} - The directory of the given path.
- */
-export const getDirectory = async (targetPath) => {
-  return (await isDirectory(targetPath)) ? targetPath : path.dirname(targetPath);
 };
 
 /**
@@ -73,8 +64,8 @@ export const getDirectory = async (targetPath) => {
  * @returns {string} The readable path.
  */
 export const getReadablePath = (filePath) => {
-  const relativePath = path.relative(process.cwd(), filePath);
-  const segments = relativePath.replace(/\\/g, '/').split('/');
+  const relativePath = upath.relative(process.cwd(), filePath);
+  const segments = relativePath.split('/');
   if (segments.length > 4) {
     return segments.slice(0, 2).join('/') + '...' + segments.slice(-2).join('/');
   }
@@ -101,7 +92,7 @@ export const loadJSON = async (filePath) => {
  * @returns {Promise<string | void>} The created directory if it does not exist else void.
  */
 export const makeDirectory = async (targetPath) => {
-  const targetDir = await getDirectory(targetPath);
+  const targetDir = upath.extname(targetPath) ? upath.dirname(targetPath) : targetPath;
   try {
     // Return if directory already exists
     await fs.access(targetDir);
@@ -146,21 +137,19 @@ export const mergeObjects = (...objs) => {
 };
 
 /**
- * Sanitizes the given string and prevents directory traversal.
- * @param {string} str - The string to sanitize.
+ * Sanitizes and prevents directory traversal in the given url.
+ * @param {string} url - The url to sanitize.
  * @param {Object} [options] - The sanitization options.
- * @param {string} [options.prefix] - The prefix to prepend to the string.
- * @param {string} [options.suffix] - The suffix to append to the string.
- * @returns {string} The sanitized string.
+ * @param {boolean} [options.leading] - The leading separator option.
+ * @param {boolean} [options.trailing] - The trailing separator option.
+ * @returns {string} The sanitized path.
  */
-export const sanitize = (str, { prefix = '', suffix = '' } = {}) => {
-  const options = { prefix, suffix };
-  let result = str.replace(/\?.*/, '');
-  if (result.includes('..')) {
-    return sanitize(result.replace('..', ''), options);
-  }
-  result = result.replace(/(^\/)|(\/$)/g, '');
-  return result ? `${prefix}${result}${suffix}` : '';
+export const sanitize = (url, { leading = false, trailing = false } = {}) => {
+  return url
+    .replace(/(\.\.)/g, '')
+    .replace(/\?.*/, '')
+    .replace(/^(\/)?/, leading ? '/' : '')
+    .replace(/(\/)?$/, trailing ? '/' : '');
 };
 
 /**
@@ -169,22 +158,26 @@ export const sanitize = (str, { prefix = '', suffix = '' } = {}) => {
  * @param {Object} [options] - The search options.
  * @param {string} [options.cwd] - The directory to search in (defaults to cwd).
  * @param {string[]} [options.exts] - The accepted file extensions to search for.
+ * @param {boolean} [options.resolve] - The option to resolve the file paths.
  * @returns {Promise<string[]>} - The found files.
  */
-export const searchFiles = async (filter, { cwd = process.cwd(), exts = [] } = {}) => {
+export const searchFiles = async (
+  filter,
+  { cwd = process.cwd(), exts = [], resolve = false } = {},
+) => {
   // Retrieve files
   const patterns = filter.includes('*') ? [filter] : [`**/*${filter}*`, `**/*${filter}*/**`];
-  const globs = patterns.map((pattern) => glob(pattern, { cwd, posix: true }));
+  const globs = patterns.map((pattern) => glob(pattern, { cwd, nodir: true, posix: true }));
   const results = await Promise.all(globs);
   const matches = _.uniq(_.flatten(results)).sort();
 
   // Filter files by extension
   const files = [];
   for (const match of matches) {
-    if (path.extname(match) === '') {
+    if (upath.extname(match) === '') {
       continue;
     } else if (!exts.length || exts.some((ext) => match.endsWith(ext.slice(1)))) {
-      files.push(match);
+      files.push(resolve ? upath.join(cwd, match) : match);
     }
   }
   return files;
@@ -214,7 +207,7 @@ export const toArray = (obj) => {
  */
 export const toTitleCase = (str) => {
   return str
-    .replace(path.extname(str), '')
+    .replace(upath.extname(str), '')
     .replace(/[_-]+/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase())
     .trim();
