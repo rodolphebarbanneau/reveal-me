@@ -1,0 +1,36 @@
+
+Refer to the official documentation or source code for more details on each option and possible values.
+See https://github.com/rodolphebarbanneau/reveal-me#readme
+
+Usage:
+    > reveal-me <presentation> [options]
+    > reveal-me <project> <presentation> [options]
+
+Options:
+-v, --version                                 Output the version number.
+    --init                                    A boolean to initialize a new project.
+    --extensions <exts>                       A coma separated list of file extensions to include.
+-c, --config <path>                           Path to the configuration file.
+    --project <name>                          Name of the project.
+    --git <url>                               Path to the git files repository of the project.
+    --host <host>                             The hostname for serving the presentation.
+    --port <port>                             The port number for the server.
+    --no-open                                 A boolean to disable auto open of the presentation in the browser.
+-w, --watch                                   A boolean to enable watching file changes and live-reloading.
+    --base-url <url>                          The base URL for the presentation.
+    --out-dir <dir>                           The output directory for the build files.
+    --root-dir <dir>                          The root directory of the project.
+    --assets-dir <dir>                        The directory name for assets.
+    --template-path <path>                    Path to the template file.
+    --preprocessor-paths <paths>              A coma separated list of paths to preprocessor scripts.
+    --partial-paths <paths>                   A coma separated list of paths to partial files.
+    --script-paths <paths>                    A coma separated list of paths to script files.
+    --style-paths <paths>                     A coma separated list of paths to style files.
+    --theme-paths <paths>                     A coma separated list of paths to theme files.
+-a, --all                                     A boolean to enable building all presentations in the project without prompting.
+-b, --build                                   A boolean to trigger the build process.
+-p, --print <filename>                        A boolean to enable printing to PDF.
+    --print-size <size>                       Specifies the paper size for the PDF print.
+    --puppeteer-launch <args>                 Custom arguments for launching Puppeteer.
+    --puppeteer-executable <path>             Path to a custom Puppeteer executable.
+-h, --help                                    Display help for command.

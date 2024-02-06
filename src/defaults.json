@@ -1,0 +1,71 @@
+{
+  "extensions": [".hbs", ".html", ".md"],
+  "config": "config.json",
+  "host": "localhost",
+  "port": 3000,
+  "open": true,
+  "watch": false,
+  "baseUrl": "slides",
+  "outDir": "dist",
+  "rootDir": ".",
+  "assetsDir": ".",
+  "templatePath": "~templates/main.hbs",
+  "preprocessorPaths": ["preprocessor.js"],
+  "partialPaths": ["partials/**/*.{hbs,handlebars,mustache}"],
+  "scriptPaths": ["scripts/**/*.js"],
+  "stylePaths": ["styles/**/*.css"],
+  "themePaths": [],
+  "presentation": {
+    "featured": 1,
+    "theme": "white",
+    "highlightTheme": "monokai-sublime",
+    "separators": {
+      "horizontalSeparator": "\r?\n---\r?\n",
+      "verticalSeparator": "\r?\n----\r?\n",
+      "noteSeparator": "^NOTE:|^Note:"
+    },
+    "settings": {
+      "view": "slide",
+      "transition": "slide",
+      "center": true,
+      "controls": true,
+      "hash": true,
+      "history": true,
+      "progress": true,
+      "slideNumber": true,
+      "mathjax2": {
+        "config": "TeX-AMS_HTML-full",
+        "TeX": {
+          "Macros": {
+            "R": "\\mathbb{R}",
+            "set": ["\\left\\{#1 \\; ; \\; #2\\right\\}", 2]
+          }
+        }
+      },
+      "menu": {
+        "side": "left",
+        "width": "normal",
+        "numbers": false,
+        "titleSelector": "h1,h2,h3,h4",
+        "useTextContentForMissingTitles": false,
+        "hideMissingTitles": false,
+        "markers": true,
+        "custom": [{
+          "title": "Project",
+          "icon": "<i class='fa fa-sitemap'></i>",
+          "content": "<ul class='slide-menu-items'><li class='slide-menu-item'><a href='/'>Home</a></li><li class='slide-menu-item'><a href='./'>Directory</a></li><li class='slide-menu-item'><a href='?view=print'>Print</a></li></ul>"
+        }],
+        "themes": false,
+        "transitions": false,
+        "openButton": true,
+        "openSlideNumber": false,
+        "keyboard": true,
+        "sticky": false,
+        "autoOpen": true,
+        "delayInit": false,
+        "openOnInit": false,
+        "loadIcons": true
+      }
+    }
+  }
+}
