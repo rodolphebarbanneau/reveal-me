@@ -67,8 +67,9 @@ const promptForAction = async () => {
       name: 'target',
       message: 'Select an option:',
       choices: [
-        { name: 'Load active directory', value: 'directory' },
-        { name: 'Load examples', value: 'examples' },
+        { name: 'Load active directory', value: 'load-directory' },
+        { name: 'Load examples', value: 'load-examples' },
+        { name: 'Initialize', value: 'init' },
         { name: 'Show help', value: 'help' },
         { name: 'Exit (^C)', value: 'exit' },
       ],
@@ -141,22 +142,20 @@ const promptForPresentation = async (config) => {
  *    operation is set (i.e. "build" and "print").
  * */
 (async () => {
-  // Retrieve help content
-  const help = await fs.readFile(upath.join(__dirname, 'help.txt'));
+  // Handle hello message
   const hello = (mode) => {
-    console.log(`🤙 \x1b[1mreveal-me\x1b[0m ${pkg.version} [${mode}]`);
+    console.log(`🤙 \x1b[1mreveal-me\x1b[0m ${pkg.version} ${mode ? `[${mode}]` : ''}`);
   };
 
-  // Handle command line arguments
-  if (argv.help) {
-    // Print help
-    hello(help.toString());
-    process.exit(0);
-  } else if (argv.version) {
-    // Print version
-    console.log(pkg.version);
-    process.exit(0);
-  } else if (argv.init) {
+  // Process help
+  const processHelp = async () => {
+    // Print help content
+    const content = await fs.readFile(upath.join(__dirname, 'help.txt'));
+    hello(content.toString());
+  };
+
+  // Process init
+  const processInit = async () => {
     // Initialize a new project
     hello('init');
     const project = await promptForInit();
@@ -165,6 +164,18 @@ const promptForPresentation = async (config) => {
     } else {
       console.log('❌ Operation aborted');
     }
+  };
+
+  // Handle command line arguments
+  if (argv.help) {
+    await processHelp();
+    process.exit(0);
+  } else if (argv.version) {
+    // Print version
+    console.log(pkg.version);
+    process.exit(0);
+  } else if (argv.init) {
+    await processInit();
     process.exit(0);
   } else {
     // Serve presentations
@@ -182,14 +193,18 @@ const promptForPresentation = async (config) => {
         const action = await promptForAction();
         // Handle action
         switch (action.target) {
-          case 'directory':
+          case 'load-directory':
             process.argv.splice(2, 0, '.');
             break;
-          case 'examples':
+          case 'load-examples':
             process.argv.splice(2, 0, '~examples');
             break;
+          case 'init':
+            await processInit();
+            process.exit(0);
+            break;
           case 'help':
-            console.log(help.toString());
+            await processHelp();
             process.exit(0);
             break;
           case 'exit':
