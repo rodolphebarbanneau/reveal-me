@@ -1,4 +1,4 @@
-import * as render from '../src/render';
+import * as render from '../src/render.js';
 
 describe('isAbsoluteUrl function tests', () => {
   test('should return true for absolute URLs', () => {

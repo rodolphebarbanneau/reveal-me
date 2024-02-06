@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 
 import upath from 'upath';
 
-import * as config from '../src/config';
+import * as config from '../src/config.js';
 
 jest.mock('node:fs/promises');
 

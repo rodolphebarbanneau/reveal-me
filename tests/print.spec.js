@@ -1,4 +1,4 @@
-import * as print from '../src/print';
+import * as print from '../src/print.js';
 
 describe('getSlideUrl function tests', () => {
   test('should return a valid slide URL', () => {

@@ -3,8 +3,8 @@ import fs from 'node:fs/promises';
 import upath from 'upath';
 import { glob } from 'glob';
 
-import * as utils from '../src/utils';
-import { NoEntryError } from './fixtures/errors';
+import * as utils from '../src/utils.js';
+import { NoEntryError } from './fixtures/errors.js';
 
 jest.mock('node:fs/promises');
 jest.mock('glob');
