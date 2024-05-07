@@ -4,12 +4,10 @@
   "baseUrl": "/",
   "rootDir": "src",
   "preprocessorPaths": ["preprocessor.js"],
-  "scriptPaths": [
-    "https://cdn.jsdelivr.net/npm/reveal.js-mermaid-plugin@2.1.0/plugin/mermaid/mermaid.min.js"
-  ],
+  "scriptPaths": [],
   "presentation": {
     "theme": "light",
-    "plugins": ["RevealMermaid"],
+    "plugins": [],
     "settings": {
       "mermaid": {
         "theme": "base",
@@ -17,12 +15,7 @@
         "themeVariables": {
           "darkMode": false,
           "fontFamily": "Source Sans Pro",
-          "fontSize": "24px",
-          "primaryColor": "#d3d9e7",
-          "primaryBorderColor": "#050f25",
-          "secondaryColor": "#253861",
-          "tertiaryColor": "#3d0561",
-          "lineColor": "#d9220c"
+          "fontSize": "24px"
         }
       }
     }
