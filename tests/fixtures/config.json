@@ -6,18 +6,6 @@
   "preprocessorPaths": ["preprocessor.js"],
   "scriptPaths": [],
   "presentation": {
-    "theme": "light",
-    "plugins": [],
-    "settings": {
-      "mermaid": {
-        "theme": "base",
-        "themeCSS": "*{ line-height: 1; text-align: initial; }",
-        "themeVariables": {
-          "darkMode": false,
-          "fontFamily": "Source Sans Pro",
-          "fontSize": "24px"
-        }
-      }
-    }
+    "theme": "light"
   }
 }
