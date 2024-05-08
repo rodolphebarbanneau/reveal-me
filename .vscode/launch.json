@@ -15,7 +15,7 @@
       ],
       "console": "integratedTerminal",
       "skipFiles": [
-          "<node_internals>/**"
+        "<node_internals>/**"
       ]
     },
     {
@@ -28,7 +28,7 @@
       ],
       "console": "integratedTerminal",
       "skipFiles": [
-          "<node_internals>/**"
+        "<node_internals>/**"
       ]
     },
     {
@@ -41,7 +41,7 @@
       ],
       "console": "integratedTerminal",
       "skipFiles": [
-          "<node_internals>/**"
+        "<node_internals>/**"
       ]
     },
     {
