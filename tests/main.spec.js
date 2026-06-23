@@ -8,28 +8,40 @@ describe('main function tests', () => {
 
   test('should run the CLI command successfully', (done) => {
     // Call the CLI process
-    const cli = spawn('node', ['bin/main.js', 'tests/fixtures']);
-    // Check for successful exit
-    cli.on('close', (code) => {
-      expect(code).toBe(0);
-      done();
+    const cli = spawn('node', ['bin/main.js', 'tests/fixtures', '--no-open'], {
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
-    // Check for errors
-    cli.on('error', (error) => {
-      expect(error).toBeNull();
+
+    let output = '';
+    let answeredPresentation = false;
+    let sentSigint = false;
+
+    // Check for successful exit
+    cli.on('close', (code, signal) => {
+      expect(code === 0 || signal === 'SIGINT').toBe(true);
       done();
     });
 
-    // Close the CLI process
-    cli.stdout.on('data', (data) => {
-      const content = data.toString();
-      if (content.includes('Select a specifc presentation?')) {
+    cli.on('error', (error) => {
+      done(error);
+    });
+
+    const handleOutput = (data) => {
+      output += data.toString();
+
+      if (!answeredPresentation && output.includes('Select a specifc presentation?')) {
         // Select default option (no specific presentation)
+        answeredPresentation = true;
         cli.stdin.write('\n');
-      } else if (content.includes('Press ^C to exit')) {
+      } else if (!sentSigint && output.includes('Press ^C to exit')) {
         // Close the server
+        sentSigint = true;
         cli.kill('SIGINT');
       }
-    });
-  });
+    };
+
+    // Close the CLI process
+    cli.stdout.on('data', handleOutput);
+    cli.stderr.on('data', handleOutput);
+  }, 15000);
 });

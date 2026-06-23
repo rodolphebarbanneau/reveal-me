@@ -54,15 +54,15 @@ const menuPath = upath.join(require.resolve('reveal.js-menu/menu.js'), '..');
 /** @type {Record<string, ModuleConfig>} */
 const MODULES = {
   /* eslint-disable prettier/prettier */
-  'assets': { url: '/assets' },
-  'base': { url: '/modules/reveal', path: revealPath },
-  'bootstrap': { url: '/modules/bootstrap', path: bootstrapPath },
-  'datatables': { url: '/modules/datatables', path: datatablesPath },
+  assets: { url: '/assets' },
+  base: { url: '/modules/reveal', path: revealPath },
+  bootstrap: { url: '/modules/bootstrap', path: bootstrapPath },
+  datatables: { url: '/modules/datatables', path: datatablesPath },
   'datatables-bs': { url: '/modules/datatables-bs', path: datatablesBsPath },
   'font-awesome': { url: '/modules/font-awesome', path: fontAwesomePath },
-  'highlight': { url: '/modules/highlight', path: highlightPath },
-  'jquery': { url: '/modules/jquery', path: jqueryPath },
-  'menu': { url: '/modules/menu', path: menuPath },
+  highlight: { url: '/modules/highlight', path: highlightPath },
+  jquery: { url: '/modules/jquery', path: jqueryPath },
+  menu: { url: '/modules/menu', path: menuPath },
   /* eslint-enable prettier/prettier */
 };
 

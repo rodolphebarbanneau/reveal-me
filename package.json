@@ -20,7 +20,7 @@
     "start": "node bin/main.js src/examples --watch",
     "lint": "eslint bin src tests",
     "format": "prettier --write bin/**/*.js src/**/*.js tests/**/*.js **/*.md",
-    "test": "jest tests/*.spec.js",
+    "test": "jest tests",
     "release": "release-it"
   },
   "keywords": [
@@ -60,7 +60,7 @@
     "lodash": "^4.17.21",
     "minimatch": "^9.0.3",
     "open": "^10.0.3",
-    "reveal.js": "^5.0.2",
+    "reveal.js": "^5.2.0",
     "reveal.js-menu": "^2.1.0",
     "serve-favicon": "^2.5.0",
     "upath": "^2.0.1",
