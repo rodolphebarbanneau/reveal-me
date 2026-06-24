@@ -3,6 +3,7 @@
   "git": "https://github.com/rodolphebarbanneau/reveal-me/blob/main",
   "baseUrl": "/",
   "rootDir": "src",
+  "assetsDir": "assets",
   "preprocessorPaths": ["preprocessor.js"],
   "scriptPaths": [],
   "presentation": {

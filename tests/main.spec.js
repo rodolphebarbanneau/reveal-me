@@ -8,7 +8,7 @@ describe('main function tests', () => {
 
   test('should run the CLI command successfully', (done) => {
     // Call the CLI process
-    const cli = spawn('node', ['bin/main.js', 'tests/fixtures', '--no-open'], {
+    const cli = spawn('node', ['bin/main.js', 'tests/fixtures', '--no-open', '--port', '3099'], {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 

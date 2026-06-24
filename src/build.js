@@ -7,6 +7,7 @@ import { glob } from 'glob';
 import { minimatch } from 'minimatch';
 
 import configuration from './config.js';
+import { getAssetBuildPath, rewriteCssUrls } from './assets.js';
 import { renderCollection, renderDocument } from './render.js';
 import {
   isDirectory,
@@ -19,6 +20,7 @@ import {
 
 /**
  * @typedef {import('./types').File} File
+ * @typedef {import('./types').Config} Config
  */
 
 // Initialize debug
@@ -48,7 +50,7 @@ export const copy = async (from, to, files = new Map(), { include = [], exclude 
         (exclude.length === 0 || !exclude.some((pattern) => minimatch(fromMatch, pattern)))
       ) {
         console.debug(`❏ ${getReadablePath(fromMatch)} → ${getReadablePath(toMatch)}`);
-        const buffer = fs.readFile(fromMatch);
+        const buffer = fs.readFile(fromMatch).then((data) => Uint8Array.from(data));
         files.set(toMatch, { path: fromMatch, buffer });
       }
     }
@@ -79,14 +81,21 @@ export const minify = async (files) => {
 /**
  * Writes files to the file system.
  * @param {Map<string, File>} files - The map of files.
+ * @param {object} [options] - The write options.
+ * @param {Config} [options.config] - The configuration object used to rewrite CSS assets.
  * @returns {Promise<string[]>} The paths of the written files.
  */
-export const write = async (files) => {
+export const write = async (files, { config } = {}) => {
   const operations = [];
   for (const [destination, file] of files.entries()) {
     const operation = (async () => {
       console.debug(`★ ${getReadablePath(file.path)} → ${getReadablePath(destination)}`);
-      const data = await file.buffer;
+      let data = await file.buffer;
+      if (config && destination.endsWith('.css')) {
+        const content = Buffer.from(data).toString('utf-8');
+        const rewritten = rewriteCssUrls(content, file.path, config);
+        data = Uint8Array.from(Buffer.from(rewritten.content, 'utf-8'));
+      }
       await makeDirectory(destination);
       await fs.writeFile(destination, data);
       return destination;
@@ -126,7 +135,7 @@ export const buildModules = async () => {
       const to = upath.join(config.outDir, module.url);
       await copy(from, to, files, { exclude: [configPath, ...presentations] });
     }
-    await write(files);
+    await write(files, { config });
   } catch (error) {
     console.error(`😱 Error building modules to "${config.outDir}":\n`, error);
     debug(error);
@@ -182,7 +191,7 @@ export const buildDocument = async (url) => {
   // Build
   try {
     const operations = [];
-    const [markup, hyperlinks] = await renderDocument(buildUrl);
+    const [markup, localAssets] = await renderDocument(buildUrl);
     // Markup
     operations.push(
       (async () => {
@@ -191,18 +200,14 @@ export const buildDocument = async (url) => {
         return builPath;
       })(),
     );
-    // Hyperlinks
+    // Local assets
     const files = new Map();
-    for (const hyperlink of hyperlinks) {
-      const from = hyperlink.path;
-      const to = upath.join(
-        config.outDir,
-        config.baseUrl,
-        upath.relative(config.rootDir, hyperlink.path),
-      );
+    for (const asset of localAssets) {
+      const from = asset.path;
+      const to = getAssetBuildPath(config, from);
       await copy(from, to, files);
     }
-    operations.push(write(files));
+    operations.push(write(files, { config }));
     // Execute operations
     await Promise.all(operations);
   } catch (error) {

@@ -8,6 +8,13 @@ import { glob } from 'glob';
 import { pathToFileURL } from 'url';
 
 import configuration from './config.js';
+import {
+  dedupeAssets,
+  getLocalAssets,
+  isAbsoluteUrl,
+  resolveAssetPaths,
+  scanContentAssets,
+} from './assets.js';
 import { isDirectory, isFile, sanitize, searchFiles, toArray, toTitleCase } from './utils.js';
 
 /**
@@ -18,17 +25,9 @@ import { isDirectory, isFile, sanitize, searchFiles, toArray, toTitleCase } from
  * @typedef {import('./types').PresentationConfig} PresentationConfig
  * @typedef {import('./types').SourceConfig} SourceConfig
  * @typedef {import('./types').Asset} Asset
+ * @typedef {import('./types').AssetContext} AssetContext
  * @typedef {import('./types').Preprocessor} Preprocessor
  */
-
-/**
- * Checks if the given URL is an absolute URL.
- * @param {string} url - The URL to check.
- * @returns {boolean} - True if the URL is an absolute URL, false otherwise.
- */
-export const isAbsoluteUrl = (url) => {
-  return !url.includes('\n') && (url.indexOf('://') > 0 || url.indexOf('//') === 0);
-};
 
 /**
  * Gets the assets.
@@ -114,23 +113,31 @@ export const getRevealOptions = async (config, fromUrl = '/') => {
 /**
  * Gets the scripts.
  * @param {Config} config - The configuration object.
- * @param {string} [fromUrl] - The URL to resolve the paths from.
+ * @param {string} url - The URL of the presentation document.
+ * @param {string} targetPath - The filesystem path of the presentation document.
  * @returns {Promise<Asset[]>} The scripts.
  */
-export const getScripts = async (config, fromUrl = '/') => {
-  const scriptPaths = [...toArray(config.scriptPaths), ...toArray(config.presentation.scripts)];
-  return await getAssets(config.modules['assets'], scriptPaths, fromUrl);
+export const getScripts = async (config, url, targetPath) => {
+  /** @type {AssetContext} */
+  const context = { config, url, targetPath };
+  const global = await resolveAssetPaths(context, config.scriptPaths, 'assets');
+  const local = await resolveAssetPaths(context, config.presentation.scripts, 'presentation');
+  return dedupeAssets([...global, ...local]);
 };
 
 /**
  * Gets the styles.
  * @param {Config} config - The configuration object.
- * @param {string} [fromUrl] - The URL to resolve the paths from.
+ * @param {string} url - The URL of the presentation document.
+ * @param {string} targetPath - The filesystem path of the presentation document.
  * @returns {Promise<Asset[]>} The styles.
  */
-export const getStyles = async (config, fromUrl = '/') => {
-  const stylePaths = [...toArray(config.stylePaths), ...toArray(config.presentation.styles)];
-  return await getAssets(config.modules['assets'], stylePaths, fromUrl);
+export const getStyles = async (config, url, targetPath) => {
+  /** @type {AssetContext} */
+  const context = { config, url, targetPath };
+  const global = await resolveAssetPaths(context, config.stylePaths, 'assets');
+  const local = await resolveAssetPaths(context, config.presentation.styles, 'presentation');
+  return dedupeAssets([...global, ...local]);
 };
 
 /**
@@ -337,11 +344,10 @@ export const renderCollection = async (url, filter = '') => {
  * Renders a given presentation document into HTML.
  * @param {string} url - The URL of the presentation document to render.
  * @returns {Promise<[string, Asset[]]>} The rendered HTML presentation document markup with its
- * associated hyperlinks.
+ * associated local assets.
  */
 export const renderDocument = async (url) => {
   // Retrieve url properties
-  const endpoint = upath.dirname(url);
   const extension = upath.extname(url);
   const name = upath.basename(url, extension);
   const title = toTitleCase(name);
@@ -360,8 +366,8 @@ export const renderDocument = async (url) => {
   const engine = await getTemplateEngine(config, url);
   const theme = await getTheme(config, url);
   const highlightTheme = await getHighlightTheme(config, url);
-  const scripts = await getScripts(config, url);
-  const styles = await getStyles(config, url);
+  const scripts = await getScripts(config, url, targetPath);
+  const styles = await getStyles(config, url, targetPath);
 
   // Retrieve template options
   const options = {
@@ -394,43 +400,19 @@ export const renderDocument = async (url) => {
     options.content = await preprocessor(options.content, options);
   }
 
-  // Update content hyperlinks
-  const hyperlinks = [];
-  const patterns = [/\[.*\]\((.+?)\)/g, /(?:data-background-image|href)=["'](.+?)["']/g];
-  patterns.forEach((pattern) => {
-    options.content = options.content.replace(pattern, (match, sub) => {
-      if (isAbsoluteUrl(sub)) {
-        // Handle absolute hyperlinks
-        return match;
-      } else if (sub.startsWith('#')) {
-        // Handle anchor hyperlinks
-        return match;
-      } else if (sub.startsWith('@/')) {
-        // Handle assets hyperlinks
-        const assets = config.modules['assets'];
-        const hyperlink = {
-          url: upath.relative(upath.dirname(url), upath.join(assets.url, sub.slice(2))),
-          path: upath.join(assets.path, sub.slice(2)),
-        };
-        return match.replace(sub, hyperlink.url);
-      } else {
-        // Handle relative hyperlinks
-        const hyperlink = {
-          url: upath.relative(upath.dirname(url), upath.join(endpoint, sub)),
-          path: upath.join(upath.dirname(targetPath), sub),
-        };
-        hyperlinks.push(hyperlink);
-        return match;
-      }
-    });
-  });
+  // Scan content for local assets
+  /** @type {AssetContext} */
+  const assetContext = { config, url, targetPath };
+  const scanned = await scanContentAssets(options.content, assetContext);
+  options.content = scanned.content;
+  const localAssets = dedupeAssets([...scanned.assets, ...getLocalAssets([...scripts, ...styles])]);
 
   // Compile template
   options.content = engine.compile(options.content)(options);
   const template = await fs.readFile(config.templatePath, 'utf-8');
   const markup = engine.compile(template.toString())(options);
 
-  return [markup, hyperlinks];
+  return [markup, localAssets];
 };
 
 /**

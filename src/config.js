@@ -114,7 +114,7 @@ export const getPath = async (targetPath, basePath, packagePath) => {
  * @param {PresentationConfig} presentationConfig - The presentation configuration.
  * @returns {Promise<Config>} The compiled options.
  */
-export default _.memoize(async (presentationConfig = {}) => {
+const buildConfiguration = async (presentationConfig = {}) => {
   // Retrieve cli configuration
   // Remove first two elements of the array (node and script name)
   const { _: cli_, ...cli } = yargsParser(process.argv.slice(2), CLI_OPTIONS);
@@ -191,4 +191,15 @@ export default _.memoize(async (presentationConfig = {}) => {
   config.hasFavicon = await isFile(upath.join(config.assetsDir, 'favicon.ico'));
 
   return config;
-});
+};
+
+const configuration = _.memoize(buildConfiguration);
+
+export default configuration;
+
+/**
+ * Clears the memoized configuration cache.
+ */
+export const clearConfigurationCache = () => {
+  configuration.cache.clear();
+};

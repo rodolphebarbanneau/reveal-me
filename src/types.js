@@ -137,8 +137,14 @@ export {};
  * @property {string} url - The asset URL.
  * @property {string | null} path - The asset path.
  *
+ * Asset resolution context.
+ * @typedef {Object} AssetContext
+ * @property {Config} config
+ * @property {string} url
+ * @property {string} targetPath
+ *
  * File used by the application.
  * @typedef {Object} File
  * @property {string} path - The file path.
- * @property {Promise<Buffer>} buffer - The file buffer.
+ * @property {Promise<Uint8Array>} buffer - The file buffer.
  */

@@ -1,0 +1,9 @@
+@font-face {
+  font-family: 'Test';
+  src: url('../fonts/test.woff2');
+}
+
+@font-face {
+  font-family: 'TestAt';
+  src: url('../fonts/test.woff2');
+}

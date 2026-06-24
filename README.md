@@ -122,35 +122,35 @@ customization.
 
 The following table outlines the options available in `reveal-me`:
 
-| Option                            | Description                                               |
-| --------------------------------- | --------------------------------------------------------- |
-| `-v`, `--version`                 | Output the version number.                                |
-| `-i`, `--init`                    | Initialize a new project.                                 |
-| `--extensions` `<exts>`           | A comma-separated list of file extensions to include.     |
-| `-c`, `--config` `<path>`         | Path to the configuration file.                           |
-| `--project` `<name>`              | Name of the project.                                      |
-| `--git` `<url>`                   | Path to the git files repository of the project.          |
-| `--host` `<host>`                 | The hostname for serving the presentation.                |
-| `--port` `<port>`                 | The port number for the server.                           |
-| `--no-open`                       | Disable auto open of the presentation in the browser.     |
-| `-w`, `--watch`                   | Enable watching file changes and live-reloading.          |
-| `--base-url` `<url>`              | The base URL for the presentation.                        |
-| `--out-dir` `<dir>`               | The output directory for the build files.                 |
-| `--root-dir` `<dir>`              | The root directory of the project.                        |
-| `--assets-dir` `<dir>`            | The directory name for assets.                            |
-| `--template-path` `<path>`        | Path to the template file.                                |
-| `--preprocessor-paths` `<paths>`  | A comma-separated list of paths to preprocessor scripts.  |
-| `--partial-paths` `<paths>`       | A comma-separated list of paths to partial files.         |
-| `--script-paths` `<paths>`        | A comma-separated list of paths to script files.          |
-| `--style-paths` `<paths>`         | A comma-separated list of paths to style files.           |
-| `--theme-paths` `<paths>`         | A comma-separated list of paths to theme files.           |
-| `-a`, `--all`                     | Build all presentations in the project without prompting. |
-| `-b`, `--build`                   | Trigger the build process.                                |
-| `-p`, `--print` `<filename>`      | Enable printing to PDF.                                   |
-| `--print-size` `<size>`           | Specifies the paper size for the PDF print.               |
-| `--puppeteer-launch` `<args>`     | Custom arguments for launching Puppeteer.                 |
-| `--puppeteer-executable` `<path>` | Path to a custom Puppeteer executable.                    |
-| `-h`, `--help`                    | Display help for command.                                 |
+| Option | Description |
+| ------ | ----------- |
+| `-v`, `--version` | Output the version number. |
+| `-i`, `--init` | Initialize a new project. |
+| `--extensions` `<exts>` | A comma-separated list of file extensions to include. |
+| `-c`, `--config` `<path>` | Path to the configuration file. |
+| `--project` `<name>` | Name of the project. |
+| `--git` `<url>` | Path to the git files repository of the project. |
+| `--host` `<host>` | The hostname for serving the presentation. |
+| `--port` `<port>` | The port number for the server. |
+| `--no-open`  | Disable auto open of the presentation in the browser. |
+| `-w`, `--watch`  | Enable watching file changes and live-reloading. |
+| `--base-url` `<url>` | The base URL for the presentation. |
+| `--out-dir` `<dir>` | The output directory for the build files. |
+| `--root-dir` `<dir>` | The root directory of the project. |
+| `--assets-dir` `<dir>` | The directory name for assets. |
+| `--template-path` `<path>` | Path to the template file. |
+| `--preprocessor-paths` `<paths>` | A comma-separated list of paths to preprocessor scripts. |
+| `--partial-paths` `<paths>` | A comma-separated list of paths to partial files. |
+| `--script-paths` `<paths>` | A comma-separated list of paths to script files. |
+| `--style-paths` `<paths>` | A comma-separated list of paths to style files. |
+| `--theme-paths` `<paths>` | A comma-separated list of paths to theme files. |
+| `-a`, `--all`  | Build all presentations in the project without prompting. |
+| `-b`, `--build`  | Trigger the build process. |
+| `-p`, `--print` `<filename>` | Enable printing to PDF. |
+| `--print-size` `<size>` | Specifies the paper size for the PDF print. |
+| `--puppeteer-launch` `<args>` | Custom arguments for launching Puppeteer. |
+| `--puppeteer-executable` `<path>` | Path to a custom Puppeteer executable. |
+| `-h`, `--help`  | Display help for command. |
 
 ## Configuration
 
@@ -195,6 +195,29 @@ optionally by the filename for the PDF. Customize the print size with `--print-s
 
 Customize your presentation with custom templates and themes by specifying paths to your HTML
 template, CSS stylesheets, and JavaScript files using the respective options.
+
+### Assets
+
+Assets referenced from a presentation are bundled into the build output alongside the generated HTML. This includes:
+
+- Markdown images and links with relative paths
+- Reveal.js attributes such as `data-background`, `src`, and `data-background-video` (local paths)
+- Frontmatter `scripts` and `styles` paths relative to the presentation file
+- Built-in template assets such as the hero background image (resolved relative to each presentation)
+- Root-absolute and `@/` paths inside CSS `url()` values, which are rewritten on build to paths
+  relative to the stylesheet
+
+Path conventions:
+
+| Context | Example | Resolves from |
+| ------- | ------- | ------------- |
+| `config.json` `scriptPaths` / `stylePaths` | `scripts/**/*.js` | `assetsDir` |
+| Frontmatter `scripts` / `styles` with `@/` | `'@/scripts/analytics.js'` | `assetsDir` (quote `@/` paths in YAML) |
+| Frontmatter `scripts` / `styles` (bare or `./`) | `deck.js`, `./deck.css` | Directory of the presentation file |
+| Markdown / HTML content | `@/images/logo.png` | `assetsDir` |
+| Markdown / HTML content | `./images/logo.png` | Directory of the presentation file |
+| CSS `url()` | `url('/assets/fonts/MyFont.woff2')` | Rewritten on build to a path relative to the CSS file |
+| CSS `url()` | `url('@/fonts/MyFont.woff2')` | Rewritten on build to a path relative to the CSS file |
 
 ## Troubleshooting
 
